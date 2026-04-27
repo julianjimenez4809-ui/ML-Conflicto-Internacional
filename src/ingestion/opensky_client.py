@@ -1,36 +1,76 @@
-"""OpenSky Network client — flight state vectors over conflict region."""
+"""OpenSky Network client — OAuth2 (client_credentials) flow.
+
+Tokens duran 30 min. TokenManager los refresca automáticamente.
+Credenciales van en .env: OPENSKY_CLIENT_ID y OPENSKY_CLIENT_SECRET.
+"""
 
 import os
+import time
 import requests
 import pandas as pd
 from dotenv import load_dotenv
 
 load_dotenv()
 
-BASE_URL = "https://opensky-network.org/api/states/all"
+TOKEN_URL = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
+BASE_URL  = "https://opensky-network.org/api"
 
-# Bounding box: Middle East / Eastern Mediterranean
-BBOX = {
-    "lamin": 29.0,
-    "lamax": 38.0,
-    "lomin": 34.0,
-    "lomax": 56.0,
-}
+# Bounding box: Mediterráneo Oriental + Golfo Pérsico
+BBOX = {"lamin": 29.0, "lamax": 38.0, "lomin": 34.0, "lomax": 56.0}
 
 
-def fetch_states(time_secs: int | None = None) -> pd.DataFrame:
-    params = {**BBOX}
-    if time_secs:
-        params["time"] = time_secs
+class TokenManager:
+    """Obtiene y refresca el Bearer token antes de que expire."""
 
-    auth = None
-    user = os.environ.get("OPENSKY_USERNAME")
-    passwd = os.environ.get("OPENSKY_PASSWORD")
-    if user and passwd:
-        auth = (user, passwd)
+    def __init__(self):
+        self._token: str | None = None
+        self._expires_at: float = 0
 
-    resp = requests.get(BASE_URL, params=params, auth=auth, timeout=30)
+    def get_token(self) -> str:
+        if self._token and time.time() < self._expires_at - 60:
+            return self._token
+        return self._refresh()
+
+    def _refresh(self) -> str:
+        client_id     = os.environ["OPENSKY_CLIENT_ID"]
+        client_secret = os.environ["OPENSKY_CLIENT_SECRET"]
+        resp = requests.post(
+            TOKEN_URL,
+            data={
+                "grant_type":    "client_credentials",
+                "client_id":     client_id,
+                "client_secret": client_secret,
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+        self._token      = payload["access_token"]
+        self._expires_at = time.time() + payload.get("expires_in", 1800)
+        return self._token
+
+    def auth_header(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self.get_token()}"}
+
+
+# Instancia global reutilizable dentro del proceso
+_token_manager = TokenManager()
+
+
+def _get(endpoint: str, params: dict) -> requests.Response:
+    resp = requests.get(
+        f"{BASE_URL}{endpoint}",
+        params=params,
+        headers=_token_manager.auth_header(),
+        timeout=30,
+    )
     resp.raise_for_status()
+    return resp
+
+
+def fetch_states() -> pd.DataFrame:
+    """Vuelos en tiempo real sobre el bbox de Medio Oriente."""
+    resp = _get("/states/all", BBOX)
     data = resp.json()
 
     columns = [
@@ -49,15 +89,14 @@ def fetch_states(time_secs: int | None = None) -> pd.DataFrame:
 
 
 def normalize(df: pd.DataFrame) -> pd.DataFrame:
-    return pd.DataFrame(
-        {
-            "timestamp": df["timestamp"],
-            "source": "opensky",
-            "country": df["origin_country"],
-            "lat": df["latitude"],
-            "lon": df["longitude"],
-            "text": df["callsign"].str.strip(),
-            "event_type": "flight",
-            "value": df["baro_altitude"],
-        }
-    )
+    """Mapea al esquema común del proyecto."""
+    return pd.DataFrame({
+        "timestamp":  df["timestamp"],
+        "source":     "opensky",
+        "country":    df["origin_country"],
+        "lat":        df["latitude"],
+        "lon":        df["longitude"],
+        "text":       df["callsign"].str.strip(),
+        "event_type": "flight",
+        "value":      df["baro_altitude"],
+    })

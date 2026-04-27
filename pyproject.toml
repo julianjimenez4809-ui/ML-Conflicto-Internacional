@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "osint-iran-israel"
@@ -13,7 +13,7 @@ dependencies = [
     "requests>=2.32",
     "feedparser>=6.0",          # RSS parsing (BBC, Al Jazeera, Google News)
     "atproto>=0.0.54",          # Bluesky API
-    "opensky-api>=1.3",         # OpenSky flight data
+    # opensky-api no compatible con Python 3.12 — usamos requests directo
 
     # Data processing
     "pandas>=2.2",

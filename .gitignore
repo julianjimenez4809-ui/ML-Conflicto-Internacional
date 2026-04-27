@@ -16,10 +16,12 @@ build/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Environment
+# Environment — NUNCA subir credenciales
 .env
 .env.local
 .env.*.local
+credentials.json
+*.secret.json
 
 # Data (raw/large files — use DVC or document how to reproduce)
 data/raw/
@@ -49,3 +51,12 @@ Thumbs.db
 
 # Vercel
 .vercel
+
+# Visualizaciones generadas (se regeneran con el script)
+visualizaciones/*.png
+visualizaciones/*.jpg
+# Mantener el HTML del mapa interactivo si se quiere versionar
+# visualizaciones/*.html
+
+# Entorno virtual local
+.venv/
