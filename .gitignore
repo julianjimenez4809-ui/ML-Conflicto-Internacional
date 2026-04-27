@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Data (raw/large files — use DVC or document how to reproduce)
+data/raw/
+data/processed/*.parquet
+data/processed/*.csv
+data/interim/*.parquet
+data/interim/*.csv
+
+# Model artifacts (keep metrics, ignore large binaries)
+artifacts/models/*.pkl
+artifacts/models/*.joblib
+artifacts/models/*.h5
+
+# Node / Next.js
+dashboard/node_modules/
+dashboard/.next/
+dashboard/out/
+dashboard/.vercel/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Vercel
+.vercel
