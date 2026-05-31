@@ -6,22 +6,22 @@ export default function Home() {
           Sistema de Inteligencia Multifuente
         </h1>
         <p className="mt-2 text-gray-400">
-          Conflicto Irán – Israel – EE.UU. · ML1 2026I · Universidad Externado de Colombia
+          Conflicto Iran - Israel - EE.UU. | ML1 2026-I | Universidad Externado de Colombia
         </p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <StatCard label="Fuentes integradas" value="5" sub="ACLED · GDELT · RSS · OpenSky · Bluesky" />
-        <StatCard label="Modelos comparados" value="4" sub="KNN · Naive Bayes · LogReg · Ridge" />
-        <StatCard label="Unidad de análisis" value="País-Día" sub="Nivel de escalada como target" />
+        <StatCard label="Fuentes integradas" value="5" sub="ACLED | GDELT | RSS | OpenSky | Bluesky" />
+        <StatCard label="Modelos comparados" value="4" sub="KNN | Naive Bayes | LogReg | Ridge" />
+        <StatCard label="Unidad de analisis" value="Pais-Dia" sub="Nivel de escalada como target" />
       </div>
 
       <section className="bg-gray-900 rounded-xl p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-3">Pregunta analítica</h2>
+        <h2 className="text-xl font-semibold mb-3">Pregunta analitica</h2>
         <p className="text-gray-300 leading-relaxed">
-          ¿Es posible clasificar el nivel de escalada del conflicto Irán-Israel-EE.UU. en ventanas
-          país-día usando exclusivamente fuentes abiertas y gratuitas (eventos estructurados,
-          noticias, movilidad aérea y señales sociales)?
+          Es posible clasificar el nivel de escalada del conflicto Iran-Israel-EE.UU. en ventanas
+          pais-dia usando exclusivamente fuentes abiertas y gratuitas: eventos estructurados,
+          noticias, movilidad aerea y senales sociales?
         </p>
       </section>
 
@@ -30,17 +30,17 @@ export default function Home() {
           <h2 className="text-xl font-semibold mb-4">Fuentes de datos</h2>
           <ul className="space-y-2 text-sm text-gray-300">
             <SourceRow type="Estructurada" name="ACLED" desc="Eventos de conflicto, fatalidades, actores" />
-            <SourceRow type="Textual" name="GDELT" desc="Noticias, tono, menciones geográficas" />
-            <SourceRow type="Textual" name="RSS (BBC · AJ · GNews)" desc="Titulares y corpus noticioso" />
-            <SourceRow type="Movilidad" name="OpenSky" desc="Vuelos en el espacio aéreo de Medio Oriente" />
-            <SourceRow type="Social" name="Bluesky" desc="Posts públicos sobre el conflicto" />
+            <SourceRow type="Textual" name="GDELT" desc="Noticias, tono, menciones geograficas" />
+            <SourceRow type="Textual" name="RSS (BBC | AJ | GNews)" desc="Titulares y corpus noticioso" />
+            <SourceRow type="Movilidad" name="OpenSky" desc="Vuelos en el espacio aereo de Medio Oriente" />
+            <SourceRow type="Social" name="Bluesky" desc="Posts publicos sobre el conflicto" />
           </ul>
         </section>
 
         <section className="bg-gray-900 rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-4">Resultados del modelo</h2>
           <p className="text-gray-500 text-sm italic">
-            Los resultados se cargarán una vez que el pipeline de datos y entrenamiento haya corrido.
+            Los resultados se cargaran una vez que el pipeline de datos y entrenamiento haya corrido.
           </p>
         </section>
       </div>
@@ -74,7 +74,7 @@ function SourceRow({ type, name, desc }: { type: string; name: string; desc: str
       </span>
       <span>
         <span className="font-medium text-white">{name}</span>
-        <span className="text-gray-400"> — {desc}</span>
+        <span className="text-gray-400"> - {desc}</span>
       </span>
     </li>
   );
