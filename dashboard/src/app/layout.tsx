@@ -14,8 +14,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Sistema de Inteligencia Multifuente",
-  description: "Dashboard ML1 para analizar escalada del conflicto Iran-Israel-EE.UU.",
+  title: "OSINT · Conflicto Irán–Israel–EE.UU.",
+  description: "Inteligencia de fuentes abiertas para clasificar la escalada del conflicto Irán-Israel-EE.UU. · ML1-2026I · Universidad Externado de Colombia",
 };
 
 export default function RootLayout({
