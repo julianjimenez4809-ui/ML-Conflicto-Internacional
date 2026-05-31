@@ -1,44 +1,109 @@
 import { supabase } from "@/lib/supabase";
+import { EscalationTimeline, DistributionChart } from "./charts";
+import type { TimelinePoint, DistPoint } from "./charts";
 
-// Resultados del modelo (generados por train.py)
 const MODEL_RESULTS = [
-  { model: "KNN",                 f1: 1.000, std: 0.000 },
-  { model: "Logistic Regression", f1: 1.000, std: 0.000 },
-  { model: "Ridge Classifier",    f1: 0.981, std: 0.026 },
-  { model: "Naive Bayes",         f1: 0.414, std: 0.025 },
+  { model: "KNN",                 f1: 0.751, std: 0.031 },
+  { model: "Logistic Regression", f1: 0.624, std: 0.028 },
+  { model: "Ridge Classifier",    f1: 0.467, std: 0.062 },
+  { model: "Naive Bayes",         f1: 0.452, std: 0.058 },
 ];
 
+type LatestEntry = {
+  date: string;
+  country: string;
+  escalation_level: number;
+  n_conflict_events: number;
+  avg_goldstein: number;
+  n_gdelt_mentions: number;
+};
+
 async function getStats() {
-  const { count: totalEvents } = await supabase
-    .from("raw_events")
-    .select("*", { count: "exact", head: true });
+  const [
+    { count: totalEvents },
+    { data: sources },
+    { data: recentEvents },
+    { data: latestRaw },
+    { data: timelineRaw },
+    { data: distributionRaw },
+  ] = await Promise.all([
+    supabase.from("raw_events").select("*", { count: "exact", head: true }),
+    supabase.from("raw_events").select("source").limit(5000),
+    supabase
+      .from("raw_events")
+      .select("timestamp, source, country, event_type, text")
+      .order("timestamp", { ascending: false })
+      .limit(8),
+    supabase
+      .from("daily_features")
+      .select("date, country, escalation_level, n_conflict_events, avg_goldstein, n_gdelt_mentions")
+      .order("date", { ascending: false })
+      .limit(30),
+    supabase
+      .from("v_escalation_timeline")
+      .select("date, country, level_real, model_name")
+      .eq("model_name", "knn")
+      .order("date", { ascending: true }),
+    supabase.from("v_target_distribution").select("*"),
+  ]);
 
-  const { data: sources } = await supabase
-    .from("raw_events")
-    .select("source")
-    .limit(5000);
-
+  // Source counts
   const sourceCounts: Record<string, number> = {};
   for (const row of sources ?? []) {
     sourceCounts[row.source] = (sourceCounts[row.source] ?? 0) + 1;
   }
 
-  const { data: recentEvents } = await supabase
-    .from("raw_events")
-    .select("timestamp, source, country, event_type, text")
-    .order("timestamp", { ascending: false })
-    .limit(8);
+  // Latest escalation per country (first occurrence DESC = most recent date)
+  const latest: Record<string, LatestEntry> = {};
+  for (const row of latestRaw ?? []) {
+    if (!latest[row.country]) latest[row.country] = row as LatestEntry;
+  }
 
-  return { totalEvents, sourceCounts, recentEvents };
+  // Pivot timeline: date → { IRN, ISR, USA }
+  const timelineMap: Record<string, TimelinePoint> = {};
+  for (const row of timelineRaw ?? []) {
+    if (!timelineMap[row.date]) timelineMap[row.date] = { date: row.date };
+    (timelineMap[row.date] as Record<string, unknown>)[row.country] = row.level_real;
+  }
+  const timeline = Object.values(timelineMap).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+
+  // Pivot distribution: level → { IRN, ISR, USA }
+  const distMap: Record<number, DistPoint> = {};
+  for (const row of distributionRaw ?? []) {
+    const lvl = row.escalation_level as number;
+    const label = lvl === 0 ? "Bajo (0)" : lvl === 1 ? "Medio (1)" : "Alto (2)";
+    if (!distMap[lvl]) distMap[lvl] = { level: label, IRN: 0, ISR: 0, USA: 0 };
+    (distMap[lvl] as Record<string, unknown>)[row.country as string] = row.dias;
+  }
+  const distribution = [0, 1, 2].map((l) => distMap[l]).filter(Boolean) as DistPoint[];
+
+  return { totalEvents, sourceCounts, recentEvents, latest, timeline, distribution };
 }
 
+const escalationBg = (lvl: number) =>
+  lvl === 0
+    ? "bg-green-950 border-green-800"
+    : lvl === 1
+    ? "bg-yellow-950 border-yellow-800"
+    : "bg-red-950 border-red-800";
+
+const escalationColor = (lvl: number) =>
+  lvl === 0 ? "text-green-400" : lvl === 1 ? "text-yellow-400" : "text-red-400";
+
+const escalationLabel = (lvl: number) =>
+  lvl === 0 ? "Bajo" : lvl === 1 ? "Medio" : "Alto";
+
 export default async function Home() {
-  const { totalEvents, sourceCounts, recentEvents } = await getStats();
+  const { totalEvents, sourceCounts, recentEvents, latest, timeline, distribution } =
+    await getStats();
 
   const bestModel = MODEL_RESULTS[0];
 
   return (
     <main className="min-h-screen bg-gray-950 text-gray-100 p-8">
+      {/* Header */}
       <header className="mb-10">
         <div className="flex items-center gap-3 mb-2">
           <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
@@ -66,86 +131,89 @@ export default async function Home() {
         <StatCard
           label="Mejor modelo"
           value={bestModel.model}
-          sub={`F1 = ${bestModel.f1.toFixed(3)}`}
+          sub={`F1 = ${bestModel.f1.toFixed(3)} ± ${bestModel.std.toFixed(3)}`}
           color="green"
+        />
+        <StatCard
+          label="Días analizados"
+          value={String(timeline.length)}
+          sub="Ventanas país-día · GDELT"
+          color="purple"
         />
         <StatCard
           label="Modelos evaluados"
           value="4"
-          sub="KNN | NB | LogReg | Ridge"
-          color="purple"
-        />
-        <StatCard
-          label="Unidad de análisis"
-          value="País-Día"
-          sub="Escalada de conflicto (0-1-2)"
+          sub="CV 5-fold · Escalada 0-1-2"
           color="yellow"
         />
       </div>
 
-      {/* Pregunta analítica */}
-      <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-3 text-white">
-          Pregunta analítica
+      {/* Estado de escalada por país */}
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-white">
+          Estado de escalada — última fecha disponible
         </h2>
-        <p className="text-gray-300 leading-relaxed">
-          ¿Es posible clasificar el nivel de escalada del conflicto
-          Irán–Israel–EE.UU. en ventanas país-día usando exclusivamente fuentes
-          abiertas y gratuitas: eventos estructurados, noticias, movilidad
-          aérea y señales sociales?
-        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(["IRN", "ISR", "USA"] as const).map((c) => {
+            const d = latest[c];
+            const lvl = d?.escalation_level ?? 0;
+            return (
+              <div key={c} className={`rounded-xl border p-5 ${escalationBg(lvl)}`}>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-bold text-xl text-white">{c}</span>
+                  <span
+                    className={`text-sm font-bold px-2 py-0.5 rounded ${escalationColor(lvl)}`}
+                  >
+                    Nivel {lvl} — {escalationLabel(lvl)}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">{d?.date ?? "sin datos"}</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-300">
+                  <span>Eventos GDELT</span>
+                  <span className="text-right font-mono">
+                    {d?.n_conflict_events?.toLocaleString("es-CO") ?? "—"}
+                  </span>
+                  <span>Goldstein avg</span>
+                  <span className="text-right font-mono">
+                    {d?.avg_goldstein?.toFixed(2) ?? "—"}
+                  </span>
+                  <span>Menciones</span>
+                  <span className="text-right font-mono">
+                    {d?.n_gdelt_mentions?.toLocaleString("es-CO") ?? "—"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
+      {/* Timeline + Distribución */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Fuentes de datos */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-xl font-semibold mb-4 text-white">
-            Fuentes de datos
+          <h2 className="text-xl font-semibold mb-1 text-white">
+            Nivel de escalada en el tiempo
           </h2>
-          <ul className="space-y-2 text-sm text-gray-300">
-            <SourceRow
-              type="Estructurada"
-              name="ACLED"
-              desc="Eventos de conflicto, fatalidades, actores"
-              count={sourceCounts["acled"]}
-            />
-            <SourceRow
-              type="Satélite"
-              name="FIRMS (NASA)"
-              desc="Anomalías térmicas / explosiones"
-              count={sourceCounts["firms"]}
-            />
-            <SourceRow
-              type="Textual"
-              name="GDELT"
-              desc="Noticias, tono, menciones geográficas"
-              count={sourceCounts["gdelt"]}
-            />
-            <SourceRow
-              type="Textual"
-              name="RSS (BBC | AJ | GNews)"
-              desc="Titulares y corpus noticioso"
-              count={sourceCounts["rss"]}
-            />
-            <SourceRow
-              type="Movilidad"
-              name="OpenSky"
-              desc="Vuelos en el espacio aéreo de Medio Oriente"
-              count={sourceCounts["opensky"]}
-            />
-            <SourceRow
-              type="Social"
-              name="Bluesky"
-              desc="Posts públicos sobre el conflicto"
-              count={sourceCounts["bluesky"]}
-            />
-          </ul>
+          <p className="text-xs text-gray-500 mb-4">Modelo KNN · predicciones reales</p>
+          <EscalationTimeline data={timeline} />
         </section>
 
-        {/* Resultados del modelo */}
+        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h2 className="text-xl font-semibold mb-1 text-white">
+            Distribución del target por país
+          </h2>
+          <p className="text-xs text-gray-500 mb-4">
+            Días por nivel · clases balanceadas por cuartiles GDELT
+          </p>
+          <DistributionChart data={distribution} />
+        </section>
+      </div>
+
+      {/* Modelos + Fuentes / Pregunta */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-4 text-white">
-            Resultados del modelo (CV 3-fold)
+            Resultados del modelo (CV 5-fold)
           </h2>
           <div className="space-y-3">
             {MODEL_RESULTS.map((r, i) => (
@@ -157,6 +225,55 @@ export default async function Home() {
                 isBest={i === 0}
               />
             ))}
+          </div>
+        </section>
+
+        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col gap-5">
+          <div>
+            <h2 className="text-xl font-semibold mb-2 text-white">Pregunta analítica</h2>
+            <p className="text-gray-300 text-sm leading-relaxed">
+              ¿Es posible clasificar el nivel de escalada del conflicto
+              Irán–Israel–EE.UU. en ventanas país-día usando exclusivamente fuentes
+              abiertas y gratuitas: eventos estructurados, noticias, movilidad
+              aérea y señales sociales?
+            </p>
+          </div>
+          <div>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">
+              Fuentes activas
+            </h3>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <SourceRow
+                type="Estructurada"
+                name="GDELT"
+                desc="Eventos, tono Goldstein, menciones"
+                count={sourceCounts["gdelt"]}
+              />
+              <SourceRow
+                type="Satélite"
+                name="FIRMS"
+                desc="Anomalías térmicas / explosiones"
+                count={sourceCounts["firms"]}
+              />
+              <SourceRow
+                type="Textual"
+                name="RSS"
+                desc="BBC · Al Jazeera · Google News"
+                count={sourceCounts["rss"]}
+              />
+              <SourceRow
+                type="Movilidad"
+                name="OpenSky"
+                desc="Tráfico aéreo Medio Oriente"
+                count={sourceCounts["opensky"]}
+              />
+              <SourceRow
+                type="Social"
+                name="Bluesky"
+                desc="Posts públicos del conflicto"
+                count={sourceCounts["bluesky"]}
+              />
+            </ul>
           </div>
         </section>
       </div>
@@ -179,7 +296,10 @@ export default async function Home() {
             </thead>
             <tbody>
               {(recentEvents ?? []).map((ev, i) => (
-                <tr key={i} className="border-b border-gray-800/50 hover:bg-gray-800/30">
+                <tr
+                  key={i}
+                  className="border-b border-gray-800/50 hover:bg-gray-800/30"
+                >
                   <td className="py-2 pr-4 text-gray-400 text-xs whitespace-nowrap">
                     {new Date(ev.timestamp).toLocaleString("es-CO", {
                       timeZone: "UTC",
@@ -265,7 +385,9 @@ function SourceRow({
         <span className="text-gray-400"> — {desc}</span>
       </span>
       {count !== undefined && (
-        <span className="text-xs text-gray-500 shrink-0">{count.toLocaleString("es-CO")} ev.</span>
+        <span className="text-xs text-gray-500 shrink-0">
+          {count.toLocaleString("es-CO")} ev.
+        </span>
       )}
     </li>
   );
@@ -284,14 +406,21 @@ function ModelRow({
 }) {
   const pct = Math.round(f1 * 100);
   return (
-    <div className={`rounded-lg p-3 ${isBest ? "bg-green-900/30 border border-green-700" : "bg-gray-800"}`}>
+    <div
+      className={`rounded-lg p-3 ${
+        isBest
+          ? "bg-green-900/30 border border-green-700"
+          : "bg-gray-800"
+      }`}
+    >
       <div className="flex justify-between items-center mb-1">
         <span className="text-sm font-medium text-white flex items-center gap-2">
           {isBest && <span className="text-yellow-400">★</span>}
           {model}
         </span>
         <span className="text-sm text-gray-300">
-          F1 {f1.toFixed(3)} <span className="text-gray-500">± {std.toFixed(3)}</span>
+          F1 {f1.toFixed(3)}{" "}
+          <span className="text-gray-500">± {std.toFixed(3)}</span>
         </span>
       </div>
       <div className="w-full bg-gray-700 rounded-full h-1.5">
@@ -305,12 +434,12 @@ function ModelRow({
 }
 
 const sourceBadgeMap: Record<string, string> = {
-  firms:  "bg-orange-900 text-orange-300",
-  acled:  "bg-red-900 text-red-300",
-  gdelt:  "bg-green-900 text-green-300",
-  rss:    "bg-teal-900 text-teal-300",
-  opensky:"bg-yellow-900 text-yellow-300",
-  bluesky:"bg-purple-900 text-purple-300",
+  firms:   "bg-orange-900 text-orange-300",
+  acled:   "bg-red-900 text-red-300",
+  gdelt:   "bg-green-900 text-green-300",
+  rss:     "bg-teal-900 text-teal-300",
+  opensky: "bg-yellow-900 text-yellow-300",
+  bluesky: "bg-purple-900 text-purple-300",
 };
 
 function SourceBadge({ source }: { source: string }) {

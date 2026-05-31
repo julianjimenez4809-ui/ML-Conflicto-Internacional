@@ -11,8 +11,9 @@ load_dotenv(_Path(__file__).parents[2] / ".env")
 
 BASE_URL = "https://firms.modaps.eosdis.nasa.gov/api/area/csv"
 
-# Middle East bounding box: W,S,E,N (max 5 days per request with real key)
-BBOX = "29,28,60,38"
+# Middle East bounding box: W,S,E,N — extendido hasta 22°N para cubrir
+# Estrecho de Ormuz (~26.5°N), Golfo Pérsico sur, UAE, Omán, Qatar y Yemen norte
+BBOX = "29,22,60,38"
 
 SOURCES = ["VIIRS_SNPP_NRT", "MODIS_NRT"]
 
