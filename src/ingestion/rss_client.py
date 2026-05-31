@@ -50,3 +50,22 @@ def fetch_all_feeds() -> pd.DataFrame:
     if not df.empty:
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
     return df
+
+
+if __name__ == "__main__":
+    from pathlib import Path
+
+    OUT_DIR = Path("data/raw/rss")
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    df = fetch_all_feeds()
+    if not df.empty:
+        out = OUT_DIR / "rss_raw.parquet"
+        # Append to existing if present
+        if out.exists():
+            existing = pd.read_parquet(out)
+            df = pd.concat([existing, df], ignore_index=True).drop_duplicates(subset=["url", "text"])
+        df.to_parquet(out, index=False)
+        print(f"RSS: {len(df)} headlines → {out}")
+    else:
+        print("RSS: no data fetched")

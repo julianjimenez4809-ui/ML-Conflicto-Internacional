@@ -61,3 +61,22 @@ def normalize(df: pd.DataFrame) -> pd.DataFrame:
             "value": df["baro_altitude"],
         }
     )
+
+
+if __name__ == "__main__":
+    from pathlib import Path
+
+    OUT_DIR = Path("data/raw/opensky")
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    print("Fetching current OpenSky state vectors over Middle East bbox ...")
+    df = fetch_states()
+    if not df.empty:
+        out = OUT_DIR / "opensky_raw.parquet"
+        if out.exists():
+            existing = pd.read_parquet(out)
+            df = pd.concat([existing, df], ignore_index=True).drop_duplicates(subset=["icao24", "timestamp"])
+        df.to_parquet(out, index=False)
+        print(f"OpenSky: {len(df)} flights → {out}")
+    else:
+        print("OpenSky: no data returned")
