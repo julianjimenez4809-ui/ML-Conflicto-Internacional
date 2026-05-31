@@ -30,11 +30,16 @@ def build(integrated: pd.DataFrame | None = None) -> pd.DataFrame:
         .reset_index()
     )
 
-    # --- Text features: TF-IDF on news titles (per day) ---
-    news = integrated[integrated["event_type"] == "news"].copy()
-    news["date"] = news["timestamp"].dt.date
-    news_daily = news.groupby("date")["text"].apply(" ".join).reset_index()
-    news_daily.columns = ["date", "daily_news_text"]
+    # --- Text features: TF-IDF on all events (country + event_type + source) ---
+    # Build a descriptive text string per day from all available data
+    integrated["event_text"] = (
+        integrated["country"].fillna("") + " "
+        + integrated["event_type"].fillna("") + " "
+        + integrated["source"].fillna("") + " "
+        + integrated["text"].fillna("")
+    ).str.strip()
+    text_daily = integrated.groupby("date")["event_text"].apply(" ".join).reset_index()
+    news_daily = text_daily.rename(columns={"event_text": "daily_news_text"})
 
     # --- Mobility: flight count per day in bbox ---
     flights = integrated[integrated["source"] == "opensky"]
@@ -63,6 +68,8 @@ def build(integrated: pd.DataFrame | None = None) -> pd.DataFrame:
     # --- Merge all features ---
     base = acled_agg.copy()
     base = base.merge(news_daily, on="date", how="left")
+    # Ensure text column is never empty for TF-IDF
+    base["daily_news_text"] = base["daily_news_text"].fillna("").replace("", "unknown event conflict region")
     base = base.merge(flight_agg, on="date", how="left")
     base = base.merge(social_agg, on="date", how="left")
 
@@ -70,7 +77,7 @@ def build(integrated: pd.DataFrame | None = None) -> pd.DataFrame:
 
     output_path = PROCESSED_DIR / "features.parquet"
     base.to_parquet(output_path, index=False)
-    print(f"Features built: {len(base):,} rows → {output_path}")
+    print(f"Features built: {len(base):,} rows -> {output_path}")
     return base
 
 

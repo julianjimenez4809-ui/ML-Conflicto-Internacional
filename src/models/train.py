@@ -46,7 +46,7 @@ def build_preprocessor():
     return ColumnTransformer(
         [
             ("num", StandardScaler(), NUMERIC_FEATURES),
-            ("tfidf", TfidfVectorizer(max_features=500, ngram_range=(1, 2)), TEXT_FEATURE),
+            ("tfidf", TfidfVectorizer(max_features=300, ngram_range=(1, 2), min_df=1, stop_words=None), TEXT_FEATURE),
         ]
     )
 
@@ -59,7 +59,7 @@ def define_models() -> dict:
             ("clf", KNeighborsClassifier(n_neighbors=5)),
         ]),
         "naive_bayes": Pipeline([
-            ("tfidf", TfidfVectorizer(max_features=500)),
+            ("tfidf", TfidfVectorizer(max_features=300, min_df=1)),
             ("clf", ComplementNB()),
         ]),
         "logistic_regression": Pipeline([
@@ -75,8 +75,13 @@ def define_models() -> dict:
 
 def evaluate_models(X: pd.DataFrame, y: pd.Series) -> dict:
     models = define_models()
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    # Use 3 folds to avoid empty splits with small dataset
+    cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
     scorer = make_scorer(f1_score, average="weighted", zero_division=0)
+    
+    # Sanitize text column
+    X = X.copy()
+    X[TEXT_FEATURE] = X[TEXT_FEATURE].fillna("").replace("", "unknown event conflict region")
 
     results = {}
     for name, pipeline in models.items():

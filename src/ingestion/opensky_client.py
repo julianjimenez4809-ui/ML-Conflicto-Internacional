@@ -1,36 +1,84 @@
-"""OpenSky Network client — flight state vectors over conflict region."""
+"""OpenSky Network client — OAuth2 (client_credentials) flow.
+
+Tokens duran 30 min. TokenManager los refresca automaticamente.
+Credenciales van en .env: OPENSKY_CLIENT_ID y OPENSKY_CLIENT_SECRET.
+Sin credenciales OAuth2 el cliente cae a la API publica (sin autenticacion).
+"""
 
 import os
+import time
 import requests
 import pandas as pd
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).parents[2] / ".env")
 
-BASE_URL = "https://opensky-network.org/api/states/all"
+TOKEN_URL = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
+BASE_URL  = "https://opensky-network.org/api"
 
-# Bounding box: Middle East / Eastern Mediterranean
-BBOX = {
-    "lamin": 29.0,
-    "lamax": 38.0,
-    "lomin": 34.0,
-    "lomax": 56.0,
-}
+# Bounding box: Mediterraneo Oriental + Golfo Persico
+BBOX = {"lamin": 29.0, "lamax": 38.0, "lomin": 34.0, "lomax": 56.0}
 
 
-def fetch_states(time_secs: int | None = None) -> pd.DataFrame:
-    params = {**BBOX}
-    if time_secs:
-        params["time"] = time_secs
+class TokenManager:
+    """Obtiene y refresca el Bearer token antes de que expire."""
 
-    auth = None
-    user = os.environ.get("OPENSKY_USERNAME")
-    passwd = os.environ.get("OPENSKY_PASSWORD")
-    if user and passwd:
-        auth = (user, passwd)
+    def __init__(self):
+        self._token: str | None = None
+        self._expires_at: float = 0
 
-    resp = requests.get(BASE_URL, params=params, auth=auth, timeout=30)
+    def get_token(self) -> str | None:
+        client_id = os.environ.get("OPENSKY_CLIENT_ID")
+        if not client_id:
+            return None  # Sin credenciales OAuth2 → API publica
+        if self._token and time.time() < self._expires_at - 60:
+            return self._token
+        return self._refresh()
+
+    def _refresh(self) -> str:
+        client_id     = os.environ["OPENSKY_CLIENT_ID"]
+        client_secret = os.environ["OPENSKY_CLIENT_SECRET"]
+        resp = requests.post(
+            TOKEN_URL,
+            data={
+                "grant_type":    "client_credentials",
+                "client_id":     client_id,
+                "client_secret": client_secret,
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+        self._token      = payload["access_token"]
+        self._expires_at = time.time() + payload.get("expires_in", 1800)
+        return self._token
+
+    def auth_header(self) -> dict[str, str]:
+        token = self.get_token()
+        if token:
+            return {"Authorization": f"Bearer {token}"}
+        return {}
+
+
+# Instancia global reutilizable dentro del proceso
+_token_manager = TokenManager()
+
+
+def _get(endpoint: str, params: dict) -> requests.Response:
+    resp = requests.get(
+        f"{BASE_URL}{endpoint}",
+        params=params,
+        headers=_token_manager.auth_header(),
+        timeout=30,
+    )
     resp.raise_for_status()
+    return resp
+
+
+def fetch_states() -> pd.DataFrame:
+    """Vuelos en tiempo real sobre el bbox de Medio Oriente."""
+    resp = _get("/states/all", BBOX)
     data = resp.json()
 
     columns = [
@@ -49,34 +97,35 @@ def fetch_states(time_secs: int | None = None) -> pd.DataFrame:
 
 
 def normalize(df: pd.DataFrame) -> pd.DataFrame:
-    return pd.DataFrame(
-        {
-            "timestamp": df["timestamp"],
-            "source": "opensky",
-            "country": df["origin_country"],
-            "lat": df["latitude"],
-            "lon": df["longitude"],
-            "text": df["callsign"].str.strip(),
-            "event_type": "flight",
-            "value": df["baro_altitude"],
-        }
-    )
+    """Mapea al esquema comun del proyecto."""
+    return pd.DataFrame({
+        "timestamp":  df["timestamp"],
+        "source":     "opensky",
+        "country":    df["origin_country"],
+        "lat":        df["latitude"],
+        "lon":        df["longitude"],
+        "text":       df["callsign"].str.strip(),
+        "event_type": "flight",
+        "value":      df["baro_altitude"],
+    })
 
 
 if __name__ == "__main__":
-    from pathlib import Path
-
     OUT_DIR = Path("data/raw/opensky")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("Fetching current OpenSky state vectors over Middle East bbox ...")
+    using_oauth = bool(os.environ.get("OPENSKY_CLIENT_ID"))
+    print(f"Fetching OpenSky state vectors ({'OAuth2' if using_oauth else 'API publica'}) ...")
+
     df = fetch_states()
     if not df.empty:
         out = OUT_DIR / "opensky_raw.parquet"
         if out.exists():
             existing = pd.read_parquet(out)
-            df = pd.concat([existing, df], ignore_index=True).drop_duplicates(subset=["icao24", "timestamp"])
+            df = pd.concat([existing, df], ignore_index=True).drop_duplicates(
+                subset=["icao24", "timestamp"]
+            )
         df.to_parquet(out, index=False)
-        print(f"OpenSky: {len(df)} flights → {out}")
+        print(f"OpenSky: {len(df)} flights -> {out}")
     else:
-        print("OpenSky: no data returned")
+        print("OpenSky: no data returned (verifica credenciales o bbox)")

@@ -1,110 +1,119 @@
-# Sistema de Inteligencia Multifuente — Conflicto Irán-Israel-EE.UU.
+# Sistema de Inteligencia Multifuente - Conflicto Iran-Israel-EE.UU.
 
-Proyecto Final ML1 · Universidad Externado de Colombia · 2026-I
+Proyecto Final ML1 - Universidad Externado de Colombia - 2026-I
 
-## Pregunta analítica
+## Pregunta analitica
 
-> ¿Es posible clasificar el nivel de escalada del conflicto Irán-Israel-EE.UU. en ventanas
-> país-día usando exclusivamente fuentes abiertas y gratuitas?
+> Es posible clasificar el nivel de escalada del conflicto Iran-Israel-EE.UU. en ventanas pais-dia usando exclusivamente fuentes abiertas y gratuitas?
 
-**Unidad de análisis:** país-día  
-**Target:** nivel de escalada (0=bajo, 1=medio, 2=alto) derivado de fatalidades ACLED  
-**Tarea ML principal:** clasificación supervisada multiclase
+## Diseno metodologico
 
-## Fuentes
+- **Unidad de analisis:** pais-dia.
+- **Target:** nivel de escalada (`0=bajo`, `1=medio`, `2=alto`) derivado de eventos y fatalidades de ACLED.
+- **Tarea principal:** clasificacion supervisada multiclase.
+- **Producto final:** pipeline reproducible, modelos comparados y dashboard web desplegado.
 
-| Fuente | Tipo | API / Acceso |
-|--------|------|-------------|
-| ACLED | Estructurada — eventos de conflicto | API con registro |
-| GDELT | Textual — noticias y tono | API pública |
-| BBC / Al Jazeera / Google News | Textual — titulares | RSS público |
-| OpenSky | Movilidad aérea | API pública (o con cuenta) |
-| Bluesky | Social — posts públicos | AT Protocol API |
+## Fuentes previstas
 
-## Modelos comparados
+| Fuente | Tipo | Uso en el proyecto |
+| --- | --- | --- |
+| ACLED | Eventos estructurados | Target, fatalidades, conteo de eventos, tipo de evento |
+| GDELT | Noticias globales | Volumen informativo, corpus textual, narrativa mediatica |
+| RSS BBC / Al Jazeera / Google News | Titulares | Senal textual reciente y contraste editorial |
+| OpenSky | Movilidad aerea | Conteo y variacion de vuelos en la region |
+| Bluesky | Conversacion social | Volumen de posts y senales discursivas |
+| NASA FIRMS | Contexto satelital | Fuente opcional para anomalias termicas |
 
-1. **KNN** (línea base)
-2. **Naive Bayes** (sobre TF-IDF)
-3. **Logistic Regression** (con balanceo de clases)
-4. **Ridge Classifier** (regularización L2)
+## Modelos base
+
+El proyecto prioriza modelos vistos en ML1:
+
+1. KNN como linea base.
+2. Naive Bayes sobre TF-IDF.
+3. Logistic Regression con balanceo de clases.
+4. Ridge Classifier con regularizacion L2.
+
+Las metricas principales seran `macro F1`, `weighted F1`, matriz de confusion y analisis de errores por clase.
 
 ## Estructura del repositorio
 
-```
+```text
 .
-├── data/
-│   ├── raw/           # Datos crudos por fuente (no versionados)
-│   ├── interim/       # Datos en proceso de limpieza
-│   └── processed/     # Dataset integrado y features
-├── notebooks/         # EDA y exploración
-├── src/
-│   ├── ingestion/     # Clientes por fuente
-│   ├── processing/    # Normalización y merge
-│   ├── features/      # Feature engineering
-│   └── models/        # Entrenamiento y evaluación
-├── artifacts/
-│   ├── models/        # Modelos serializados
-│   └── metrics/       # Resultados CV en JSON
-├── dashboard/         # Next.js app (desplegada en Vercel)
-├── material de apoyo/ # Enunciado del proyecto
-├── pyproject.toml
-└── .env.example
+|-- data/
+|   |-- raw/            # Datos crudos por fuente, no versionados
+|   |-- interim/        # Datos intermedios
+|   `-- processed/      # Dataset integrado y features
+|-- docs/               # Documentacion metodologica y tecnica
+|-- material de apoyo/  # Enunciado oficial
+|-- scripts/            # Scripts auxiliares
+|-- src/
+|   |-- ingestion/      # Clientes por fuente
+|   |-- processing/     # Normalizacion e integracion
+|   |-- features/       # Feature engineering
+|   `-- models/         # Entrenamiento y evaluacion
+|-- dashboard/          # App Next.js
+|-- pyproject.toml
+`-- .env.example
 ```
 
-## Instalación
+## Instalacion local
 
 ```bash
-# 1. Clonar el repo
-git clone <url>
-cd taller_final
+git clone git@github.com:julianjimenez4809-ui/ML-Conflicto-Internacional.git
+cd ML-Conflicto-Internacional
 
-# 2. Crear entorno virtual
 python -m venv .venv
-source .venv/bin/activate        # Linux/Mac
-# .venv\Scripts\activate          # Windows
-
-# 3. Instalar dependencias Python
+.venv\Scripts\activate
 pip install -e ".[dev]"
 
-# 4. Copiar variables de entorno
-cp .env.example .env
-# Editar .env con tus API keys
-
-# 5. Dashboard
-cd dashboard && npm install
+copy .env.example .env
 ```
 
-## Pipeline de datos
-
-```bash
-# Ingesta (ejecutar por fuente)
-python -m src.ingestion.acled_client
-python -m src.ingestion.gdelt_client
-python -m src.ingestion.rss_client
-
-# Normalizar y merge
-python -m src.processing.normalize
-
-# Feature engineering
-python -m src.features.build_features
-
-# Entrenar y comparar modelos
-python -m src.models.train
-```
-
-## Dashboard local
+Dashboard:
 
 ```bash
 cd dashboard
+npm install
 npm run dev
-# → http://localhost:3000
 ```
 
-## Despliegue en Vercel
+URL local:
 
-El dashboard (`/dashboard`) está configurado para Vercel:
+```text
+http://localhost:3000
+```
 
-1. Conectar el repo en [vercel.com](https://vercel.com)
-2. Set **Root Directory** → `dashboard`
-3. Framework → Next.js (detectado automáticamente)
-4. Deploy
+## Variables de entorno
+
+El archivo `.env.example` documenta las credenciales necesarias para ingesta y dashboard. Las claves reales deben ir en `.env` o `dashboard/.env.local`, nunca en Git.
+
+## Pipeline previsto
+
+```bash
+python -m src.ingestion.acled_client
+python -m src.ingestion.gdelt_client
+python -m src.ingestion.rss_client
+python -m src.processing.normalize
+python -m src.features.build_features
+python -m src.models.train
+```
+
+La version profesional del pipeline quedara documentada e implementada por fases en [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
+
+## Dashboard y despliegue
+
+El dashboard vive en `dashboard/` y esta preparado para Vercel:
+
+1. Root Directory: `dashboard`
+2. Framework: Next.js
+3. Variables requeridas:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+## Estado actual
+
+- Repo conectado por SSH a GitHub.
+- Dashboard Next.js funcionando localmente.
+- Supabase configurado para frontend.
+- Clientes iniciales de ingesta disponibles.
+- Pendiente: ejecutar ingesta real, construir dataset final, entrenar modelos y alimentar dashboard con resultados.
