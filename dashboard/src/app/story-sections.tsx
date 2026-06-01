@@ -1169,7 +1169,68 @@ export function FindingsSection() {
           ))}
           <div className="border-t border-[#d2d2d7]"/>
         </div>
-        <FadeUp delay={400}>
+        {/* Limitaciones del sistema */}
+        <FadeUp delay={500}>
+          <div className="rounded-2xl border border-[#d2d2d7] bg-white overflow-hidden mb-20">
+            <div className="px-10 py-8 border-b border-[#f0f0f0]">
+              <p className="text-sm font-semibold text-[#6e6e73] tracking-widest uppercase mb-2">Limitaciones del sistema</p>
+              <h3 className="text-2xl font-bold text-[#1d1d1f]">Lo que este sistema no puede hacer</h3>
+              <p className="text-[#6e6e73] mt-2 max-w-2xl">
+                Un sistema riguroso documenta sus propios límites. Estas son las restricciones conocidas del presente análisis.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-[#f0f0f0]">
+              {[
+                {
+                  icon: "01",
+                  title: "No predice eventos, clasifica patrones",
+                  body: "El modelo clasifica el nivel de escalada de un día dado — no predice cuándo ocurrirá el próximo ataque. La diferencia es importante: el sistema detecta patrones históricos similares, no causas futuras.",
+                  color: "#ff3b30",
+                },
+                {
+                  icon: "02",
+                  title: "Cobertura FIRMS limitada a 5 días",
+                  body: "La API gratuita de NASA FIRMS entrega máximo 5 días de datos por solicitud. El mapa de hotspots refleja solo 26–30 mayo 2026, no el histórico completo. Para análisis temporal extendido se requiere suscripción pagada.",
+                  color: "#ff9f0a",
+                },
+                {
+                  icon: "03",
+                  title: "GDELT puede sobrerepresentar conflictos visibles",
+                  body: "GDELT indexa medios en idioma inglés con mayor densidad. Eventos en farsi, árabe o hebreo pueden estar subrepresentados. El tono Goldstein refleja la cobertura mediática, no necesariamente la realidad en campo.",
+                  color: "#af52de",
+                },
+                {
+                  icon: "04",
+                  title: "El target es una simplificación",
+                  body: "Reducir la escalada a 3 niveles (Bajo/Medio/Alto) mediante cuartiles de Goldstein es una decisión de diseño que introduce pérdida de información. Días en el límite de cuartil pueden ser clasificados incorrectamente por pequeñas variaciones.",
+                  color: "#0071e3",
+                },
+                {
+                  icon: "05",
+                  title: "Bluesky y AIS tienen volumen muy bajo",
+                  body: "Con 61 posts (Bluesky) y 138 registros AIS en el período cubierto, estas fuentes tienen poder estadístico insuficiente para ser determinantes en el modelo. Su inclusión es metodológica — demuestran integración multifuente.",
+                  color: "#34c759",
+                },
+                {
+                  icon: "06",
+                  title: "La simulación del mapa no es en tiempo real",
+                  body: "Los buques y aeronaves del mapa siguen rutas preestablecidas simuladas — no son posiciones AIS/OpenSky en tiempo real. Los datos reales corresponden a mayo 2026 e incluyen 138 registros AIS y 493K trazas OpenSky históricas.",
+                  color: "#6e6e73",
+                },
+              ].map((l, i) => (
+                <div key={i} className="px-8 py-7 flex gap-5">
+                  <div className="text-2xl font-black font-mono flex-shrink-0" style={{ color: l.color, opacity: 0.35 }}>{l.icon}</div>
+                  <div>
+                    <div className="text-sm font-bold text-[#1d1d1f] mb-2">{l.title}</div>
+                    <p className="text-sm text-[#6e6e73] leading-relaxed">{l.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={600}>
           <div className="text-center py-10">
             <blockquote className="text-3xl md:text-4xl font-black text-[#1d1d1f] leading-tight max-w-3xl mx-auto mb-4">
               &ldquo;Los datos abiertos no reemplazan a la inteligencia humana.
