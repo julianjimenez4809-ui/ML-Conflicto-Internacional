@@ -1,10 +1,20 @@
 import { supabase } from "@/lib/supabase";
 import type { TimelinePoint, DistPoint } from "./charts";
 import {
-  NavBar, HeroSection, ConflictSection, DataSection,
-  SourcesSection, FirmsSection, MLSection, LiveSection,
+  NavBar, HeroSection, VideoBreak, ConflictSection, DataSection,
+  SourcesSection, HormuzMapSection, MLSection, LiveSection,
   FindingsSection, FooterSection,
 } from "./story-sections";
+
+// ── Video sources — reemplazar con URLs reales cuando estén disponibles ───────
+// Formato: MP4 · 1080p mínimo · sin audio necesario · 15-25 segundos
+const VIDEOS = {
+  conflict:   "",   // V1: Imágenes bélicas — jets, explosiones, drones de guerra, noticieros
+  satellite:  "",   // V2: Vista satelital Oriente Medio — buques en Golfo, Estrecho de Ormuz
+  newsroom:   "",   // V3: Breaking news b-roll — pantallas, mapas en movimiento, sala de redacción
+};
+
+// ── Data fetching ─────────────────────────────────────────────────────────────
 
 async function getPageData() {
   const [
@@ -53,18 +63,17 @@ async function getPageData() {
     if (!distMap[lvl]) distMap[lvl] = { level: label, IRN: 0, ISR: 0, USA: 0 };
     (distMap[lvl] as Record<string, unknown>)[row.country as string] = row.dias;
   }
-  const distribution = [0, 1, 2].map((l) => distMap[l]).filter(Boolean) as DistPoint[];
+  const distribution = [0, 1, 2].map(l => distMap[l]).filter(Boolean) as DistPoint[];
 
-  const recentEvents = (recentRaw ?? []).map((r) => ({
-    timestamp: r.timestamp ?? "",
-    source: r.source ?? "",
-    country: r.country ?? null,
-    event_type: r.event_type ?? null,
-    text: r.text ?? null,
+  const recentEvents = (recentRaw ?? []).map(r => ({
+    timestamp: r.timestamp ?? "", source: r.source ?? "",
+    country: r.country ?? null, event_type: r.event_type ?? null, text: r.text ?? null,
   }));
 
   return { latest, recentEvents, timeline, distribution };
 }
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function Home() {
   const { latest, recentEvents, timeline, distribution } = await getPageData();
@@ -73,14 +82,57 @@ export default async function Home() {
     <>
       <NavBar />
       <main>
+        {/* 01 · Hero */}
         <HeroSection />
+
+        {/* Video 1 — transición al conflicto (imágenes de guerra / noticieros) */}
+        <VideoBreak
+          src={VIDEOS.conflict}
+          title="Una crisis global."
+          subtitle="Irán, Israel y EE.UU. en el punto de mayor tensión desde la Guerra Fría"
+          gradient="from-[#1d1d1f] via-[#2d1010] to-[#1d1d1f]"
+          height="55vh"
+        />
+
+        {/* 02 · El conflicto — contexto histórico + timeline */}
         <ConflictSection />
+
+        {/* 03 · Los datos — 6 gráficas */}
         <DataSection timeline={timeline} distribution={distribution} />
+
+        {/* 04 · Las fuentes */}
         <SourcesSection />
-        <FirmsSection />
+
+        {/* Video 2 — transición al mapa (satélite / buques / Golfo Pérsico) */}
+        <VideoBreak
+          src={VIDEOS.satellite}
+          title="El Estrecho de Ormuz."
+          subtitle="6,812 anomalías térmicas detectadas · NASA FIRMS · Mayo 2026"
+          gradient="from-[#080f1a] via-[#0a1e35] to-[#080f1a]"
+          height="55vh"
+        />
+
+        {/* 05 · Mapa del Estrecho + FIRMS */}
+        <HormuzMapSection />
+
+        {/* 06 · La IA */}
         <MLSection />
+
+        {/* 07 · Estado actual en vivo */}
         <LiveSection latest={latest} recentEvents={recentEvents} />
+
+        {/* Video 3 — transición a conclusiones (newsroom / breaking news) */}
+        <VideoBreak
+          src={VIDEOS.newsroom}
+          title="Lo que encontramos."
+          subtitle="Inteligencia artificial aplicada al conflicto más monitoreado de 2026"
+          gradient="from-[#1d1d1f] via-[#1a1a2e] to-[#1d1d1f]"
+          height="50vh"
+        />
+
+        {/* 08 · Conclusiones */}
         <FindingsSection />
+
         <FooterSection />
       </main>
     </>
