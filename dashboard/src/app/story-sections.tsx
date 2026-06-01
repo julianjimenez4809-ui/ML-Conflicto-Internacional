@@ -756,17 +756,29 @@ export function HormuzMapSection() {
             <div className="rounded-2xl bg-white/5 border border-white/8 p-8">
               <div className="text-[10px] font-mono text-white/25 tracking-widest mb-2">NASA FIRMS · VIIRS · 26–30 MAY 2026</div>
               <h3 className="text-xl font-bold text-white mb-1">Actividad térmica diaria</h3>
-              <p className="text-sm text-white/30 mb-6">Hotspots y potencia radiativa (MW) por día</p>
+              <p className="text-sm text-white/30 mb-2">Hotspots detectados y potencia radiativa (MW) por día</p>
+              <p className="text-xs text-white/18 leading-relaxed mb-6">
+                <span className="text-white/35">Por qué importa:</span> El pico del 29 de mayo (1,834 hotspots · 38,900 MW acumulados) coincide con mayor actividad de buques en el Estrecho según AIS. Las barras muestran el conteo bruto; la línea naranja muestra la energía total liberada — proxy de quema industrial intensa o actividad bélica.
+              </p>
               <FRPDailyChart/>
             </div>
           </FadeUp>
           <FadeUp delay={200}>
             <div className="rounded-2xl bg-white/5 border border-white/8 p-8">
-              <div className="text-[10px] font-mono text-white/25 tracking-widest mb-2">TOP ZONAS · FRP MÁXIMA</div>
-              <h3 className="text-xl font-bold text-white mb-1">Puntos de inflexión</h3>
-              <p className="text-sm text-white/30 mb-6">227 clusters DBSCAN · radio ≈ 25 km</p>
+              <div className="text-[10px] font-mono text-white/25 tracking-widest mb-2">TOP ZONAS · FRP MÁXIMA · DBSCAN eps=25km</div>
+              <h3 className="text-xl font-bold text-white mb-1">Puntos de inflexión geopolíticos</h3>
+              <p className="text-sm text-white/30 mb-2">227 clusters identificados sobre 6,812 hotspots</p>
+              <p className="text-xs text-white/18 leading-relaxed mb-6">
+                <span className="text-white/35">Por qué importa:</span> El FRP (potencia radiativa, MW) mide la intensidad térmica del satélite. Abu Dhabi (331 MW) y Qatar (258 MW) son <em>gas flaring</em> industrial normal. Kirkuk (190 MW) es zona de conflicto. Bandar Abbas (34 MW) es el más bajo pero el más estratégico: es el puerto naval iraní a la entrada del Estrecho — cualquier aumento aquí es una alerta militar.
+              </p>
               <div className="space-y-3">
-                {[{n:"Abu Dhabi, UAE",frp:331.5,c:"#38bdf8",t:"Industrial"},{n:"North Dome, Qatar",frp:258.1,c:"#22d3ee",t:"Industrial"},{n:"Abqaiq, Aramco",frp:219.3,c:"#fbbf24",t:"Industrial"},{n:"Kirkuk, Iraq",frp:189.5,c:"#ef4444",t:"Conflicto"},{n:"Bandar Abbas",frp:34.0,c:"#bf5af2",t:"Militar"}].map((r,i)=>(
+                {[
+                  {n:"Abu Dhabi, UAE",     frp:331.5, c:"#38bdf8", t:"Industrial"},
+                  {n:"North Dome, Qatar",  frp:258.1, c:"#22d3ee", t:"Industrial"},
+                  {n:"Abqaiq, Aramco",     frp:219.3, c:"#fbbf24", t:"Industrial"},
+                  {n:"Kirkuk, Iraq",       frp:189.5, c:"#ef4444", t:"Conflicto"},
+                  {n:"Bandar Abbas",       frp:34.0,  c:"#bf5af2", t:"⚠️ Naval"},
+                ].map((r,i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor:r.c }}/>
                     <div className="flex-1 text-sm text-white/70">{r.n}</div>
