@@ -310,8 +310,8 @@ export function DataSection({ timeline, distribution }: DataProps) {
               <div className="text-[10px] font-mono text-white/25 tracking-widest mb-1">GDELT · KNN · OCT 2023 – MAY 2026</div>
               <h3 className="text-xl font-bold text-white mb-1">Nivel de escalada por país</h3>
               <p className="text-sm text-white/30 mb-2">Clasificación KNN diaria · 0=Bajo · 1=Medio · 2=Alto</p>
-              <p className="text-xs text-white/20 leading-relaxed mb-6">
-                <span className="text-white/40">Por qué importa:</span> Muestra cómo el modelo interpreta la señal GDELT en tiempo real. Los picos coinciden con los eventos documentados en la cronología. Usar los botones para comparar países individualmente.
+              <p className="text-sm text-white/50 leading-relaxed mb-6">
+                <span className="text-white/70 font-medium">Por qué importa:</span> Muestra cómo el modelo interpreta la señal GDELT en tiempo real. Los picos coinciden con los eventos documentados en la cronología. Usar los botones para comparar países individualmente.
               </p>
               <EscalationTimeline data={timeline}/>
             </div>
@@ -321,8 +321,8 @@ export function DataSection({ timeline, distribution }: DataProps) {
               <div className="text-[10px] font-mono text-white/25 tracking-widest mb-1">INTENSIDAD COMPUESTA · ÚLTIMOS 90 DÍAS</div>
               <h3 className="text-xl font-bold text-white mb-1">Intensidad media del conflicto</h3>
               <p className="text-sm text-white/30 mb-2">Promedio diario de los tres países · escala 0–2</p>
-              <p className="text-xs text-white/20 leading-relaxed mb-6">
-                <span className="text-white/40">Por qué importa:</span> Un solo país en ALTO puede ser un evento puntual. Cuando el promedio de los tres supera 1.5, el conflicto es sistémico. El área roja visibiliza los períodos de crisis simultánea.
+              <p className="text-sm text-white/50 leading-relaxed mb-6">
+                <span className="text-white/70 font-medium">Por qué importa:</span> Un solo país en ALTO puede ser un evento puntual. Cuando el promedio de los tres supera 1.5, el conflicto es sistémico. El área roja visibiliza los períodos de crisis simultánea.
               </p>
               <ConflictIntensityChart data={timeline}/>
             </div>
@@ -335,8 +335,8 @@ export function DataSection({ timeline, distribution }: DataProps) {
             <div className="text-[10px] font-mono text-white/25 tracking-widest mb-1">GDELT · HEATMAP MENSUAL · OCT 2023 – MAY 2026</div>
             <h3 className="text-xl font-bold text-white mb-1">Mapa de calor de escalada — 32 meses</h3>
             <p className="text-sm text-white/30 mb-2">Nivel promedio por país y mes · hover para detalle</p>
-            <p className="text-xs text-white/20 leading-relaxed mb-8">
-              <span className="text-white/40">Por qué importa:</span> El heatmap revela patrones estacionales y picos sincronizados. Abr 2024 y Oct 2024 muestran rojo simultáneo en IRN e ISR — exactamente los meses de los ataques directos. Mar–Abr 2026 es el único período donde los tres países coinciden en rojo.
+            <p className="text-sm text-white/50 leading-relaxed mb-8">
+              <span className="text-white/70 font-medium">Por qué importa:</span> El heatmap revela patrones estacionales y picos sincronizados. Abr 2024 y Oct 2024 muestran rojo simultáneo en IRN e ISR — exactamente los meses de los ataques directos. Mar–Abr 2026 es el único período donde los tres países coinciden en rojo.
             </p>
             <EscalationHeatmap/>
           </div>
@@ -349,8 +349,8 @@ export function DataSection({ timeline, distribution }: DataProps) {
               <div className="text-[10px] font-mono text-white/25 tracking-widest mb-1">DISTRIBUCIÓN DE CLASES</div>
               <h3 className="text-xl font-bold text-white mb-1">Días por nivel de escalada</h3>
               <p className="text-sm text-white/30 mb-2">Por país · todo el período</p>
-              <p className="text-xs text-white/20 leading-relaxed mb-6">
-                <span className="text-white/40">Por qué importa:</span> El balanceo por cuartiles garantiza ~61 días por clase por país. Si las clases estuvieran desbalanceadas, el modelo aprendería solo a predecir la mayoritaria. Esta distribución uniforme es una decisión de diseño deliberada para evitar el sesgo.
+              <p className="text-sm text-white/50 leading-relaxed mb-6">
+                <span className="text-white/70 font-medium">Por qué importa:</span> El balanceo por cuartiles garantiza ~61 días por clase por país. Si las clases estuvieran desbalanceadas, el modelo aprendería solo a predecir la mayoritaria. Esta distribución uniforme es una decisión de diseño deliberada para evitar el sesgo.
               </p>
               <DistributionChart data={distribution}/>
             </div>
@@ -360,8 +360,8 @@ export function DataSection({ timeline, distribution }: DataProps) {
               <div className="text-[10px] font-mono text-white/25 tracking-widest mb-1">GDELT · GOLDSTEIN HISTÓRICO POR PAÍS</div>
               <h3 className="text-xl font-bold text-white mb-1">Tono Goldstein promedio</h3>
               <p className="text-sm text-white/30 mb-2">Media y rango Oct 2023 – May 2026</p>
-              <p className="text-xs text-white/20 leading-relaxed mb-6">
-                <span className="text-white/40">Por qué importa:</span> Israel es el más negativo (−4.87) porque la cobertura global de Gaza domina el índice. EE.UU. es el más moderado (−1.43) porque su cobertura mediática incluye política interna positiva. La barra muestra el rango completo — el extremo negativo indica los días de ataques.
+              <p className="text-sm text-white/50 leading-relaxed mb-6">
+                <span className="text-white/70 font-medium">Por qué importa:</span> Israel es el más negativo (−4.87) porque la cobertura global de Gaza domina el índice. EE.UU. es el más moderado (−1.43) porque su cobertura mediática incluye política interna positiva. La barra muestra el rango completo — el extremo negativo indica los días de ataques.
               </p>
               <GoldsteinBarChart/>
             </div>
@@ -757,8 +757,8 @@ export function HormuzMapSection() {
               <div className="text-[10px] font-mono text-white/25 tracking-widest mb-2">NASA FIRMS · VIIRS · 26–30 MAY 2026</div>
               <h3 className="text-xl font-bold text-white mb-1">Actividad térmica diaria</h3>
               <p className="text-sm text-white/30 mb-2">Hotspots detectados y potencia radiativa (MW) por día</p>
-              <p className="text-xs text-white/18 leading-relaxed mb-6">
-                <span className="text-white/35">Por qué importa:</span> El pico del 29 de mayo (1,834 hotspots · 38,900 MW acumulados) coincide con mayor actividad de buques en el Estrecho según AIS. Las barras muestran el conteo bruto; la línea naranja muestra la energía total liberada — proxy de quema industrial intensa o actividad bélica.
+              <p className="text-sm text-white/50 leading-relaxed mb-6">
+                <span className="text-white/70 font-medium">Por qué importa:</span> El pico del 29 de mayo (1,834 hotspots · 38,900 MW acumulados) coincide con mayor actividad de buques en el Estrecho según AIS. Las barras muestran el conteo bruto; la línea naranja muestra la energía total liberada — proxy de quema industrial intensa o actividad bélica.
               </p>
               <FRPDailyChart/>
             </div>
@@ -768,8 +768,8 @@ export function HormuzMapSection() {
               <div className="text-[10px] font-mono text-white/25 tracking-widest mb-2">TOP ZONAS · FRP MÁXIMA · DBSCAN eps=25km</div>
               <h3 className="text-xl font-bold text-white mb-1">Puntos de inflexión geopolíticos</h3>
               <p className="text-sm text-white/30 mb-2">227 clusters identificados sobre 6,812 hotspots</p>
-              <p className="text-xs text-white/18 leading-relaxed mb-6">
-                <span className="text-white/35">Por qué importa:</span> El FRP (potencia radiativa, MW) mide la intensidad térmica del satélite. Abu Dhabi (331 MW) y Qatar (258 MW) son <em>gas flaring</em> industrial normal. Kirkuk (190 MW) es zona de conflicto. Bandar Abbas (34 MW) es el más bajo pero el más estratégico: es el puerto naval iraní a la entrada del Estrecho — cualquier aumento aquí es una alerta militar.
+              <p className="text-sm text-white/50 leading-relaxed mb-6">
+                <span className="text-white/70 font-medium">Por qué importa:</span> El FRP (potencia radiativa, MW) mide la intensidad térmica del satélite. Abu Dhabi (331 MW) y Qatar (258 MW) son gas flaring industrial normal. Kirkuk (190 MW) es zona de conflicto activo. Bandar Abbas (34 MW) es el más bajo del ranking pero el más estratégico: es el puerto naval iraní a la entrada del Estrecho — cualquier aumento aquí es una alerta militar inmediata.
               </p>
               <div className="space-y-3">
                 {[
