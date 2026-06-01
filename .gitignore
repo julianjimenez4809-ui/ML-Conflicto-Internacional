@@ -64,3 +64,9 @@ visualizaciones/*.jpg
 # Videos originales (comprimidos en dashboard/public/videos/)
 *.mp4
 *.mov
+
+# Build artifacts
+.next/
+
+# Memoria del asistente (no parte del proyecto)
+memory/

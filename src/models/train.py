@@ -6,8 +6,8 @@ Modelos (alineados con temario ML1):
   3. Logistic Regression — lineal con class_weight='balanced'
   4. Ridge Classifier — regularizacion L2
 
-Features numericas : n_conflict_events, avg_goldstein, has_high_violence_int,
-                     n_mentions, n_news_articles, n_hotspots, avg_frp,
+Features numericas : n_conflict_events, avg_goldstein, has_high_violence,
+                     n_gdelt_mentions, n_news_articles, n_hotspots, avg_frp,
                      n_flights, n_social_posts, avg_social_engagement
 Feature textual     : daily_news_text  (titulares RSS + descriptor GDELT)
 Target              : escalation_level  (0=bajo, 1=medio, 2=alto)

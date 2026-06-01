@@ -4,7 +4,7 @@ Unidad de analisis : pais-dia (country-day)
 Paises             : IRN, ISR, USA  (codigos GDELT)
 Target             : escalation_level (0=bajo, 1=medio, 2=alto)
                      derivado de n_conflict_events de GDELT por
-                     cuartiles dentro de cada pais (sin sesgo de escala).
+                     cuantiles dentro de cada pais (sin sesgo de escala).
 
 Fuentes de features:
   - GDELT          → n_conflict_events, avg_goldstein, has_high_violence, n_mentions

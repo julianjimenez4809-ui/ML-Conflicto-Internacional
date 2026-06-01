@@ -11,7 +11,7 @@
 
 **Unidad de análisis:** país-día (IRN / ISR / USA)  
 **Target:** `escalation_level` — 0 = Bajo · 1 = Medio · 2 = Alto  
-**Definición del target:** cuartiles de la escala Goldstein por país; calculados sobre el histórico GDELT 2023-2026. Los días con tono promedio en el cuartil inferior se marcan como "Alto conflicto", los del cuartil superior como "Bajo conflicto".
+**Definición del target:** cuantiles del número de eventos conflictivos por país, calculados sobre el histórico GDELT del proyecto. Los días con mayor densidad de eventos se marcan como "Alto", mientras que los días con menor densidad se marcan como "Bajo".
 
 ---
 
@@ -32,15 +32,15 @@
                               │  data/raw/**/*.parquet
                               ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│              SUPABASE — PostgreSQL  (iswknjfskqiemxgpalui)       │
+│              SUPABASE — PostgreSQL                                │
 │                                                                  │
-│  raw_events          557,184 filas   ← data lake central         │
-│  events_gdelt            120 filas   ← GDELT agregado            │
-│  events_rss              141 filas   ← Titulares RSS             │
-│  events_firms            348 filas   ← Hotspots NASA             │
-│  daily_features          183 filas   ← Features país-día         │
-│  model_predictions       732 filas   ← 4 modelos × 183 ventanas  │
-│  sources                  15 filas   ← Catálogo de fuentes        │
+│  raw_events          ← eventos crudos por fuente                 │
+│  events_gdelt        ← GDELT agregado                             │
+│  events_rss          ← titulares RSS                              │
+│  events_firms        ← hotspots NASA FIRMS                        │
+│  daily_features      ← features país-día                          │
+│  model_predictions   ← predicciones de los modelos                │
+│  sources             ← catálogo de fuentes                        │
 │                                                                  │
 │  Vistas: v_daily_dashboard · v_escalation_timeline               │
 │          v_target_distribution · v_gdelt_tone_timeline           │
@@ -63,12 +63,12 @@
 
 | Fuente | Tipo | Período | Registros | Clave |
 |---|---|---|---|---|
-| **GDELT** | Eventos geopolíticos globales | Oct 2023 – May 2026 | 120 agregados país-día | Sin clave |
-| **NASA FIRMS** | Anomalías térmicas satelitales | 26–30 may 2026 | 6,812 hotspots | `NASA_FIRMS_KEY` |
-| **OpenSky Network** | Vuelos en el espacio aéreo regional | Oct 2023 – Jun 2025 | 493,382 trazas | `OPENSKY_CLIENT_ID/SECRET` |
-| **RSS Feeds** | Titulares BBC, Al Jazeera, Google News, Tehran Times, MEE | Feb – May 2026 | 141 artículos | Sin clave |
-| **Bluesky** | Posts de redes sociales | May 2026 | 61 posts | `BLUESKY_HANDLE/PASSWORD` |
-| **AISStream** | Posiciones de barcos (AIS) | May 2026 | 138 registros | Integrado |
+| **GDELT** | Eventos geopolíticos globales | Histórico del proyecto | Agregados país-día | Sin clave |
+| **NASA FIRMS** | Anomalías térmicas satelitales | Ventana reciente del proyecto | Hotspots satelitales | `NASA_FIRMS_KEY` |
+| **OpenSky Network** | Vuelos en el espacio aéreo regional | Ventana histórica del proyecto | Trazas de vuelo | `OPENSKY_CLIENT_ID/SECRET` |
+| **RSS Feeds** | Titulares BBC, Al Jazeera, Google News, Tehran Times, MEE | Ventana reciente del proyecto | Artículos RSS | Sin clave |
+| **Bluesky** | Posts de redes sociales | Ventana reciente del proyecto | Publicaciones sociales | `BLUESKY_HANDLE/PASSWORD` |
+| **AISStream** | Posiciones de barcos (AIS) | Ventana reciente del proyecto | Registros AIS | Integrado |
 
 ### GDELT — fuente primaria
 
@@ -78,7 +78,7 @@ GDELT (Global Database of Events, Language, and Tone) es la columna vertebral de
 - `avg_goldstein`: tono de la cobertura mediática (−10 conflicto / +10 cooperación)
 - `n_mentions`: volumen de menciones en medios globales
 
-La escala Goldstein se usa como señal directa para construir el target de clasificación.
+En el pipeline actual, el target de clasificación se deriva de `n_conflict_events` por país.
 
 ### NASA FIRMS — inteligencia geoespacial
 
@@ -138,7 +138,7 @@ Para cada ventana país-día se construyen las siguientes features:
 | `n_social_posts` | Bluesky | Volumen de publicaciones sociales |
 | `avg_social_engagement` | Bluesky | Engagement promedio |
 
-**Target:** `escalation_level` construido por cuartiles de `avg_goldstein` por país, calculados sobre el histórico completo GDELT.
+**Target:** `escalation_level` construido por cuantiles de `n_conflict_events` por país, calculados sobre el histórico del proyecto.
 
 ### Modelos y evaluación (`src/models/train.py`)
 
@@ -214,6 +214,17 @@ vercel deploy
 # Variables requeridas: NEXT_PUBLIC_SUPABASE_URL · NEXT_PUBLIC_SUPABASE_ANON_KEY
 ```
 
+### Filtros y navegación
+
+- El bloque **Los datos** incluye filtro por período de `3 meses`, `6 meses`, `1 año` o `Todo`.
+- La línea temporal del dashboard responde a ese filtro y permite comparar países por ventana temporal.
+
+### Artefactos auxiliares
+
+- `artifacts/sql/` contiene los `INSERT` listos para repoblar `daily_features` y `model_predictions` en Supabase.
+- `visualizaciones/01_mapa_vuelos.html` conserva una exploración interactiva de OpenSky usada en la fase EDA.
+- Estos archivos son parte de la entrega técnica y sirven como respaldo reproducible de la solución.
+
 ---
 
 ## Estructura del repositorio
@@ -248,30 +259,39 @@ ML-Conflicto-Internacional/
 ├── dashboard/                      # App Next.js
 │   ├── src/app/
 │   │   ├── page.tsx                # Página principal (server component, queries Supabase)
-│   │   ├── charts.tsx              # Componentes de gráficas (client component, Recharts)
-│   │   ├── layout.tsx              # Layout global con tema oscuro
-│   │   └── globals.css
+│   │   ├── story-sections.tsx      # Secciones narrativas (client component, scroll animations)
+│   │   ├── charts.tsx              # 8 componentes de gráficas (Recharts + CSS)
+│   │   ├── gulf-map.tsx            # Mapa interactivo Leaflet — FIRMS + AIS + OpenSky
+│   │   ├── layout.tsx              # Layout global
+│   │   └── globals.css             # Tema Apple #1d1d1f / #f5f5f7
 │   ├── src/lib/
 │   │   └── supabase.ts             # Cliente Supabase configurado
+│   ├── public/
+│   │   ├── videos/                 # Videos de fondo comprimidos (mp4, ~11MB total)
+│   │   └── data/gulf_map.json      # 800 hotspots FIRMS + rutas AIS/OpenSky para el mapa
 │   └── vercel.json                 # Configuración de despliegue Vercel
 │
 ├── artifacts/
 │   ├── models/
-│   │   └── knn.joblib              # Modelo KNN entrenado serializado
+│   │   └── knn.joblib              # Modelo KNN entrenado y serializado (joblib)
 │   ├── metrics/
-│   │   ├── cv_results.json         # F1 de los 4 modelos (CV 5-fold)
-│   │   ├── classification_report.txt
-│   │   └── confusion_matrix.png
+│   │   ├── cv_results.json         # F1 CV 5-fold: KNN=0.751, LR=0.624, Ridge=0.467, NB=0.452
+│   │   ├── classification_report.txt  # Reporte sobre set completo (F1=1.0 esperado) + nota
+│   │   └── confusion_matrix.png    # Matriz de confusión KNN
 │   └── sql/
-│       ├── daily_features_insert.sql    # 183 filas — INSERT con ON CONFLICT upsert
-│       └── model_predictions_insert.sql # 732 filas — 4 modelos × 183 ventanas
+│       ├── daily_features_insert.sql    # 183 filas upsert → Supabase daily_features
+│       └── model_predictions_insert.sql # 732 filas upsert → Supabase model_predictions
+│       # Estos SQLs permiten repoblar Supabase sin reejecutar el pipeline completo
 │
 ├── data/                           # No versionado (.gitignore)
-│   ├── raw/                        # Parquets crudos por fuente
+│   ├── raw/                        # Parquets crudos por fuente (GDELT, FIRMS, OpenSky, etc.)
 │   └── processed/                  # features.parquet · integrated.parquet
 │
+├── visualizaciones/
+│   └── 01_mapa_vuelos.html         # Mapa exploratorio de vuelos OpenSky (Folium, fase EDA)
+│
 └── docs/
-    └── GUIA_DATOS_Y_BASE_DE_DATOS.md  # Guía técnica completa: APIs, SQL, ER, troubleshooting
+    └── GUIA_DATOS_Y_BASE_DE_DATOS.md  # Guía técnica: APIs, ER model, SQL, troubleshooting
 ```
 
 ---

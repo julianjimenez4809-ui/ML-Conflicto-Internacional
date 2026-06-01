@@ -286,7 +286,26 @@ export function ConflictSection() {
 // LOS DATOS — dark, gráficas con explicación
 // ─────────────────────────────────────────────────────────────────────────────
 
+const DATE_RANGES = [
+  { label: "3 meses",  months: 3  },
+  { label: "6 meses",  months: 6  },
+  { label: "1 año",    months: 12 },
+  { label: "Todo",     months: 999 },
+];
+
 export function DataSection({ timeline, distribution }: DataProps) {
+  const [rangeMonths, setRangeMonths] = useState(999);
+
+  const filteredTimeline = rangeMonths === 999
+    ? timeline
+    : (() => {
+        if (!timeline.length) return timeline;
+        const last = timeline[timeline.length - 1].date;
+        const cutoff = new Date(last);
+        cutoff.setMonth(cutoff.getMonth() - rangeMonths);
+        return timeline.filter(p => new Date(p.date) >= cutoff);
+      })();
+
   return (
     <section id="datos" data-bg="dark" className="bg-[#1d1d1f] py-40 px-6">
       <div className="max-w-screen-xl mx-auto">
@@ -299,32 +318,55 @@ export function DataSection({ timeline, distribution }: DataProps) {
             GDELT asigna a cada evento mediático una puntuación en la <span className="text-white/70 font-semibold">escala Goldstein</span> (−10 a +10). Los valores negativos reflejan conflicto, los positivos cooperación. Esta señal es la más predictiva del modelo.
           </p>
           <p className="text-base text-white/25 max-w-2xl leading-relaxed mb-20">
-            El target <span className="font-mono font-bold text-white/40">escalation_level</span> se construye por cuartiles de Goldstein por país sobre el histórico completo. El cuartil inferior → <span className="text-[#ff3b30] font-mono font-bold">ALTO</span> · el superior → <span className="text-[#34c759] font-mono font-bold">BAJO</span>.
+            El target <span className="font-mono font-bold text-white/40">escalation_level</span> se construye por cuantiles de eventos conflictivos por país sobre el histórico del proyecto. El tramo con más eventos → <span className="text-[#ff3b30] font-mono font-bold">ALTO</span> · el tramo con menos eventos → <span className="text-[#34c759] font-mono font-bold">BAJO</span>.
           </p>
+        </FadeUp>
+
+        {/* Filtro por período */}
+        <FadeUp>
+          <div className="flex flex-wrap items-center gap-3 mb-8">
+            <span className="text-xs font-mono text-white/30 tracking-widest uppercase">Filtrar por período:</span>
+            <div className="flex gap-2">
+              {DATE_RANGES.map(r => (
+                <button key={r.label} onClick={() => setRangeMonths(r.months)}
+                  className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
+                  style={{
+                    background: rangeMonths === r.months ? "#0071e3" : "rgba(255,255,255,0.06)",
+                    color: rangeMonths === r.months ? "#fff" : "rgba(255,255,255,0.4)",
+                    border: `1px solid ${rangeMonths === r.months ? "#0071e3" : "rgba(255,255,255,0.1)"}`,
+                  }}>
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs font-mono text-white/20 ml-2">
+              {filteredTimeline.length} días · {filteredTimeline[0]?.date?.slice(0,7) ?? "—"} → {filteredTimeline[filteredTimeline.length-1]?.date?.slice(0,7) ?? "—"}
+            </span>
+          </div>
         </FadeUp>
 
         {/* Chart 1: Escalation timeline */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <FadeUp>
             <div className="rounded-2xl bg-white/5 border border-white/8 p-8">
-              <div className="text-[10px] font-mono text-white/25 tracking-widest mb-1">GDELT · KNN · OCT 2023 – MAY 2026</div>
+              <div className="text-[10px] font-mono text-white/25 tracking-widest mb-1">GDELT · KNN · PERÍODO SELECCIONADO</div>
               <h3 className="text-xl font-bold text-white mb-1">Nivel de escalada por país</h3>
               <p className="text-sm text-white/30 mb-2">Clasificación KNN diaria · 0=Bajo · 1=Medio · 2=Alto</p>
               <p className="text-sm text-white/50 leading-relaxed mb-6">
-                <span className="text-white/70 font-medium">Por qué importa:</span> Muestra cómo el modelo interpreta la señal GDELT en tiempo real. Los picos coinciden con los eventos documentados en la cronología. Usar los botones para comparar países individualmente.
+                <span className="text-white/70 font-medium">Por qué importa:</span> Muestra cómo el modelo interpreta la señal GDELT en tiempo real. Los picos coinciden con los eventos documentados en la cronología. Usar los botones de país para comparar individualmente.
               </p>
-              <EscalationTimeline data={timeline}/>
+              <EscalationTimeline data={filteredTimeline}/>
             </div>
           </FadeUp>
           <FadeUp delay={150}>
             <div className="rounded-2xl bg-white/5 border border-white/8 p-8">
-              <div className="text-[10px] font-mono text-white/25 tracking-widest mb-1">INTENSIDAD COMPUESTA · ÚLTIMOS 90 DÍAS</div>
+              <div className="text-[10px] font-mono text-white/25 tracking-widest mb-1">INTENSIDAD COMPUESTA · PERÍODO SELECCIONADO</div>
               <h3 className="text-xl font-bold text-white mb-1">Intensidad media del conflicto</h3>
               <p className="text-sm text-white/30 mb-2">Promedio diario de los tres países · escala 0–2</p>
               <p className="text-sm text-white/50 leading-relaxed mb-6">
                 <span className="text-white/70 font-medium">Por qué importa:</span> Un solo país en ALTO puede ser un evento puntual. Cuando el promedio de los tres supera 1.5, el conflicto es sistémico. El área roja visibiliza los períodos de crisis simultánea.
               </p>
-              <ConflictIntensityChart data={timeline}/>
+              <ConflictIntensityChart data={filteredTimeline}/>
             </div>
           </FadeUp>
         </div>
