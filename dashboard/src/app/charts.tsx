@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  BarChart, Bar, ResponsiveContainer, PieChart, Pie, Cell,
+  BarChart, Bar, ResponsiveContainer,
   ComposedChart, Area, RadarChart, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, Radar, ReferenceLine,
 } from "recharts";
@@ -80,65 +80,67 @@ export function DistributionChart({ data }: { data: DistPoint[] }) {
   );
 }
 
-// ═══ 3. SourceDonutChart — donut con leyenda custom externa ════════════════
+// ═══ 3. SourceDonutChart — barras horizontales + donut mini ════════════════
 
 const SOURCE_DATA = [
-  { name: "OpenSky",    value: 493382, color: "#af52de", pct: "88.5%", desc: "Tráfico aéreo" },
-  { name: "FIRMS",      value: 63604,  color: "#ff3b30", pct: "11.4%", desc: "Hotspots térmicos" },
-  { name: "AISStream",  value: 138,    color: "#5ac8fa", pct: "<0.1%", desc: "Posiciones navales" },
-  { name: "RSS Feeds",  value: 341,    color: "#ff9f0a", pct: "<0.1%", desc: "Titulares de prensa" },
-  { name: "Bluesky",    value: 61,     color: "#30d158", pct: "<0.1%", desc: "Redes sociales" },
-  { name: "GDELT",      value: 120,    color: "#0071e3", pct: "<0.1%", desc: "Eventos mediáticos" },
+  { name: "OpenSky",    value: 493382, color: "#af52de", pct: 88.5, desc: "Tráfico aéreo (vuelos)" },
+  { name: "FIRMS",      value: 63604,  color: "#ff3b30", pct: 11.4, desc: "Hotspots térmicos NASA" },
+  { name: "RSS Feeds",  value: 341,    color: "#ff9f0a", pct: 0.06, desc: "Titulares de prensa" },
+  { name: "AISStream",  value: 138,    color: "#5ac8fa", pct: 0.02, desc: "Posiciones navales" },
+  { name: "GDELT",      value: 120,    color: "#0071e3", pct: 0.02, desc: "Eventos mediáticos" },
+  { name: "Bluesky",    value: 61,     color: "#30d158", pct: 0.01, desc: "Redes sociales" },
 ];
 
 export function SourceDonutChart() {
   const [active, setActive] = useState<string | null>(null);
+  const total = SOURCE_DATA.reduce((s, d) => s + d.value, 0);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-      {/* Donut */}
-      <div className="flex flex-col items-center">
-        <div className="relative" style={{ width: 200, height: 200 }}>
-          <ResponsiveContainer width={200} height={200}>
-            <PieChart>
-              <Pie data={SOURCE_DATA} cx="50%" cy="50%"
-                innerRadius={65} outerRadius={95}
-                dataKey="value" paddingAngle={2}
-                onMouseEnter={e => setActive(e.name ?? null)}
-                onMouseLeave={() => setActive(null)}>
-                {SOURCE_DATA.map((s, i) => (
-                  <Cell key={i} fill={s.color}
-                    opacity={active === null || active === s.name ? 1 : 0.25}
-                    stroke="transparent" />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={TT}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                formatter={(v: any) => [Number(v).toLocaleString("es-CO"), "eventos"]} />
-            </PieChart>
-          </ResponsiveContainer>
-          {/* Center label */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <div className="text-2xl font-black font-mono text-white">557K</div>
-            <div className="text-[10px] text-white/30 font-mono">eventos</div>
+    <div className="space-y-0">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/8">
+        <div>
+          <div className="text-3xl font-black font-mono text-white">{total.toLocaleString("es-CO")}</div>
+          <div className="text-xs text-white/30 font-mono mt-0.5">eventos totales en Supabase</div>
+        </div>
+        {/* Mini donut — CSS conic-gradient */}
+        <div className="relative w-20 h-20 flex-shrink-0">
+          <div className="w-20 h-20 rounded-full" style={{
+            background: `conic-gradient(#af52de 0% 88.5%, #ff3b30 88.5% 100%, #ff9f0a 100% 100%)`,
+          }}/>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full flex flex-col items-center justify-center" style={{ background:"#1d1d1f" }}>
+              <div className="text-[10px] font-black font-mono text-white leading-none">6</div>
+              <div className="text-[7px] text-white/30 leading-none">fuentes</div>
+            </div>
           </div>
         </div>
       </div>
-      {/* Leyenda externa — siempre visible */}
-      <div className="space-y-3">
+
+      {/* Horizontal bar chart */}
+      <div className="space-y-4">
         {SOURCE_DATA.map(s => (
           <div key={s.name}
-            className="flex items-center gap-3 cursor-default transition-opacity"
-            style={{ opacity: active === null || active === s.name ? 1 : 0.4 }}
+            className="group cursor-default"
+            style={{ opacity: active === null || active === s.name ? 1 : 0.45 }}
             onMouseEnter={() => setActive(s.name)}
             onMouseLeave={() => setActive(null)}>
-            <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }} />
-            <div className="flex-1">
-              <div className="text-sm font-semibold text-white">{s.name}</div>
-              <div className="text-xs text-white/35">{s.desc}</div>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }}/>
+                <span className="text-sm font-semibold text-white">{s.name}</span>
+                <span className="text-xs text-white/30">{s.desc}</span>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <span className="text-xs font-mono text-white/40">{s.value.toLocaleString("es-CO")}</span>
+                <span className="text-xs font-bold font-mono w-14 text-right" style={{ color: s.color }}>
+                  {s.pct >= 1 ? s.pct.toFixed(1) + "%" : "<0.1%"}
+                </span>
+              </div>
             </div>
-            <div className="text-right">
-              <div className="text-sm font-black font-mono text-white">{s.value.toLocaleString("es-CO")}</div>
-              <div className="text-[10px] font-mono text-white/30">{s.pct}</div>
+            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+              <div className="h-2 rounded-full transition-all duration-500"
+                style={{ width: `${Math.max(s.pct, 0.3)}%`, backgroundColor: s.color, opacity: 0.85 }}/>
             </div>
           </div>
         ))}

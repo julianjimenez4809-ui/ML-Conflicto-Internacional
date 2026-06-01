@@ -1,6 +1,9 @@
 "use client";
 
 import { ReactNode, useRef, useState, useEffect } from "react";
+import dynamic from "next/dynamic";
+
+const GulfMap = dynamic(() => import("./gulf-map"), { ssr: false });
 import {
   EscalationTimeline, DistributionChart, SourceDonutChart,
   FRPDailyChart, GoldsteinBarChart, EscalationHeatmap,
@@ -713,21 +716,6 @@ export function SourcesSection() {
 // MAPA ESTRATÉGICO DEL ESTRECHO
 // ─────────────────────────────────────────────────────────────────────────────
 
-const GULF_POINTS = [
-  { id:"ormuz",  label:"Estrecho de Ormuz", sub:"39 km · 20% petróleo mundial", x:570, y:175, type:"key",      dot:"#bf5af2", size:14 },
-  { id:"babbas", label:"Bandar Abbas",      sub:"Puerto naval · Irán",          x:562, y:148, type:"military",  dot:"#bf5af2", size:10 },
-  { id:"spars",  label:"South Pars",        sub:"Mayor campo de gas mundial",   x:340, y:140, type:"oil",       dot:"#ff9f0a", size:9  },
-  { id:"rlaffan",label:"Ras Laffan",        sub:"Qatar LNG · 258 MW FRP",      x:270, y:230, type:"oil",       dot:"#22d3ee", size:9  },
-  { id:"abudhabi",label:"Abu Dhabi",        sub:"UAE · 331 MW FRP (máximo)",   x:488, y:345, type:"oil",       dot:"#38bdf8", size:9  },
-  { id:"abqaiq", label:"Abqaiq (Aramco)",   sub:"Refinería crítica · 219 MW",  x:168, y:224, type:"oil",       dot:"#fbbf24", size:9  },
-  { id:"bahrain",label:"Bahréin",           sub:"Base naval EE.UU.",           x:206, y:202, type:"military",  dot:"#34c759", size:8  },
-  { id:"doha",   label:"Doha, Qatar",       sub:"North Dome · 258 MW FRP",     x:250, y:264, type:"oil",       dot:"#22d3ee", size:8  },
-];
-const SHIP_PATHS = [
-  { path:"M 50,200 Q 200,190 350,195 Q 480,198 570,175", color:"#fff", opacity:0.15, dur:"8s",  delay:"0s" },
-  { path:"M 50,210 Q 200,200 350,205 Q 480,208 570,185", color:"#fff", opacity:0.10, dur:"10s", delay:"2s" },
-  { path:"M 50,220 Q 220,210 370,215 Q 490,218 565,190", color:"#fff", opacity:0.08, dur:"12s", delay:"5s" },
-];
 
 export function HormuzMapSection() {
   return (
@@ -745,57 +733,20 @@ export function HormuzMapSection() {
           </div>
         </FadeUp>
 
-        {/* SVG map */}
+        {/* Leaflet interactive map */}
         <FadeUp delay={100}>
           <div className="rounded-2xl overflow-hidden border border-white/8 mb-12" style={{ background:"#060d18" }}>
-            <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-              <div className="text-xs font-mono text-white/30 tracking-widest">MAPA ESTRATÉGICO — GOLFO PÉRSICO</div>
-              <div className="flex items-center gap-4 text-[10px] font-mono text-white/25">
-                <span className="flex items-center gap-1.5"><span className="inline-block w-2 h-2 rounded-full bg-[#bf5af2]"/>Militar</span>
-                <span className="flex items-center gap-1.5"><span className="inline-block w-2 h-2 rounded-full bg-[#ff9f0a]"/>Petróleo/Gas</span>
+            <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between flex-wrap gap-3">
+              <div className="text-xs font-mono text-white/30 tracking-widest">MAPA INTERACTIVO — GOLFO PÉRSICO · NASA FIRMS + AIS + OPENSKY</div>
+              <div className="flex items-center gap-5 text-[10px] font-mono text-white/25 flex-wrap">
+                <span className="flex items-center gap-1.5"><span className="inline-block w-2 h-2 rounded-full" style={{ background:"linear-gradient(to right,#fecc5c,#f03b20)" }}/>Hotspots FIRMS (FRP)</span>
+                <span className="flex items-center gap-1.5"><span style={{ fontSize:12 }}>🚢</span>Buques AIS</span>
+                <span className="flex items-center gap-1.5"><span style={{ fontSize:12 }}>✈️</span>Aeronaves OpenSky</span>
               </div>
             </div>
-            <svg viewBox="0 0 860 480" className="w-full" style={{ maxHeight:500 }}>
-              <defs>
-                <radialGradient id="seaGrad" cx="50%" cy="50%" r="60%"><stop offset="0%" stopColor="#0a1e35"/><stop offset="100%" stopColor="#060d18"/></radialGradient>
-                <radialGradient id="straitGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stopColor="#bf5af2" stopOpacity="0.25"/><stop offset="100%" stopColor="#bf5af2" stopOpacity="0"/></radialGradient>
-                <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-              </defs>
-              <rect width="860" height="480" fill="url(#seaGrad)"/>
-              {[100,200,300,400,500,600,700,800].map(x=><line key={x} x1={x} y1="0" x2={x} y2="480" stroke="white" strokeOpacity="0.03" strokeWidth="1"/>)}
-              {[80,160,240,320,400].map(y=><line key={y} x1="0" y1={y} x2="860" y2={y} stroke="white" strokeOpacity="0.03" strokeWidth="1"/>)}
-              <path d="M 0,0 L 860,0 L 860,220 Q 780,260 730,270 Q 700,265 670,240 Q 640,215 620,200 Q 600,185 570,175 Q 545,168 510,172 Q 470,175 430,168 Q 380,160 340,145 Q 290,130 240,128 Q 180,126 120,130 Q 70,133 30,138 Q 10,140 0,142 Z"
-                fill="#1a2d3a" stroke="#2d4a5f" strokeWidth="1"/>
-              <path d="M 0,340 Q 40,335 80,330 Q 120,320 160,308 Q 190,300 215,295 Q 235,292 250,285 Q 265,278 270,265 Q 272,255 268,245 Q 265,232 260,222 Q 255,212 248,205 Q 240,198 232,196 Q 220,196 208,204 Q 196,213 188,226 Q 178,242 168,256 Q 148,278 120,298 Q 90,318 55,330 Q 28,338 0,342 L 0,480 L 860,480 L 860,320 Q 820,338 790,350 Q 760,362 730,370 Q 700,374 670,366 Q 648,358 632,344 Q 618,332 608,316 Q 598,300 592,286 Q 584,268 578,254 Q 572,240 564,228 Q 555,214 545,208 Q 535,203 522,204 Q 508,207 496,218 Q 480,233 468,252 Q 455,272 445,294 Q 432,318 418,336 Q 400,356 378,368 Q 350,380 316,386 Q 280,390 240,390 Q 200,390 158,384 Q 116,376 78,360 Q 40,344 0,334 Z"
-                fill="#152535" stroke="#2d4a5f" strokeWidth="0.5"/>
-              <ellipse cx="567" cy="192" rx="50" ry="35" fill="url(#straitGlow)"/>
-              <line x1="560" y1="155" x2="560" y2="230" stroke="#bf5af2" strokeWidth="1" strokeOpacity="0.6" strokeDasharray="4 3"/>
-              <text x="575" y="198" fill="#bf5af2" fontSize="9" fontFamily="monospace" opacity="0.9">39 km</text>
-              {SHIP_PATHS.map((sp,i)=>(
-                <g key={i}>
-                  <path d={sp.path} fill="none" stroke={sp.color} strokeWidth="0.5" strokeOpacity={sp.opacity}/>
-                  <circle r="3" fill={sp.color} fillOpacity={Number(sp.opacity)*2}>
-                    <animateMotion dur={sp.dur} begin={sp.delay} repeatCount="indefinite" path={sp.path}/>
-                  </circle>
-                </g>
-              ))}
-              <text x="300" y="80" fill="white" fillOpacity="0.18" fontSize="18" fontWeight="900" fontFamily="system-ui" letterSpacing="6">I R Á N</text>
-              <text x="80"  y="390" fill="white" fillOpacity="0.13" fontSize="13" fontWeight="700" fontFamily="system-ui" letterSpacing="3">ARABIA SAUDÍ</text>
-              <text x="430" y="420" fill="white" fillOpacity="0.13" fontSize="13" fontWeight="700" fontFamily="system-ui" letterSpacing="3">UAE</text>
-              <text x="680" y="380" fill="white" fillOpacity="0.13" fontSize="13" fontWeight="700" fontFamily="system-ui" letterSpacing="3">OMÁN</text>
-              <text x="220" y="180" fill="white" fillOpacity="0.10" fontSize="12" fontFamily="monospace">GOLFO PÉRSICO</text>
-              {GULF_POINTS.map(p=>(
-                <g key={p.id} filter="url(#glow)">
-                  {p.type==="key"&&<circle cx={p.x} cy={p.y} r={p.size*2} fill={p.dot} fillOpacity="0.15"><animate attributeName="r" values={`${p.size*2};${p.size*3};${p.size*2}`} dur="3s" repeatCount="indefinite"/></circle>}
-                  <circle cx={p.x} cy={p.y} r={p.size/2} fill={p.dot} fillOpacity="0.9"/>
-                  <text x={p.x+10} y={p.y+4} fill="white" fillOpacity="0.85" fontSize="9" fontWeight="700" fontFamily="system-ui">{p.label}</text>
-                  <text x={p.x+10} y={p.y+14} fill="white" fillOpacity="0.35" fontSize="7.5" fontFamily="monospace">{p.sub}</text>
-                </g>
-              ))}
-              <rect x="590" y="156" width="160" height="28" rx="4" fill="#bf5af2" fillOpacity="0.12" stroke="#bf5af2" strokeOpacity="0.4" strokeWidth="0.5"/>
-              <text x="598" y="167" fill="#bf5af2" fontSize="8" fontWeight="700" fontFamily="monospace">20% del petróleo mundial</text>
-              <text x="598" y="179" fill="#bf5af2" fontSize="8" fontFamily="monospace" opacity="0.6">transita por aquí</text>
-            </svg>
+            <div style={{ height: 540 }}>
+              <GulfMap />
+            </div>
           </div>
         </FadeUp>
 
