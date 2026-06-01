@@ -1,81 +1,141 @@
-export default function Home() {
-  return (
-    <main className="min-h-screen bg-gray-950 text-gray-100 p-8">
-      <header className="mb-10">
-        <h1 className="text-3xl font-bold text-white">
-          Sistema de Inteligencia Multifuente
-        </h1>
-        <p className="mt-2 text-gray-400">
-          Conflicto Irán – Israel – EE.UU. · ML1 2026I · Universidad Externado de Colombia
-        </p>
-      </header>
+import { supabase } from "@/lib/supabase";
+import type { TimelinePoint, DistPoint } from "./charts";
+import {
+  NavBar, HeroSection, VideoBreak, ConflictSection, DataSection,
+  DataArchitectureSection, SourcesSection, HormuzMapSection,
+  MLSection, LiveSection, FindingsSection, FooterSection,
+} from "./story-sections";
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <StatCard label="Fuentes integradas" value="5" sub="ACLED · GDELT · RSS · OpenSky · Bluesky" />
-        <StatCard label="Modelos comparados" value="4" sub="KNN · Naive Bayes · LogReg · Ridge" />
-        <StatCard label="Unidad de análisis" value="País-Día" sub="Nivel de escalada como target" />
-      </div>
+const VIDEOS = {
+  conflict:  "/videos/military.mp4",
+  satellite: "/videos/tanker.mp4",
+  newsroom:  "/videos/newsroom.mp4",
+};
 
-      <section className="bg-gray-900 rounded-xl p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-3">Pregunta analítica</h2>
-        <p className="text-gray-300 leading-relaxed">
-          ¿Es posible clasificar el nivel de escalada del conflicto Irán-Israel-EE.UU. en ventanas
-          país-día usando exclusivamente fuentes abiertas y gratuitas (eventos estructurados,
-          noticias, movilidad aérea y señales sociales)?
-        </p>
-      </section>
+// ── Data fetching ─────────────────────────────────────────────────────────────
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <section className="bg-gray-900 rounded-xl p-6">
-          <h2 className="text-xl font-semibold mb-4">Fuentes de datos</h2>
-          <ul className="space-y-2 text-sm text-gray-300">
-            <SourceRow type="Estructurada" name="ACLED" desc="Eventos de conflicto, fatalidades, actores" />
-            <SourceRow type="Textual" name="GDELT" desc="Noticias, tono, menciones geográficas" />
-            <SourceRow type="Textual" name="RSS (BBC · AJ · GNews)" desc="Titulares y corpus noticioso" />
-            <SourceRow type="Movilidad" name="OpenSky" desc="Vuelos en el espacio aéreo de Medio Oriente" />
-            <SourceRow type="Social" name="Bluesky" desc="Posts públicos sobre el conflicto" />
-          </ul>
-        </section>
+async function getPageData() {
+  const [
+    { data: latestRaw },
+    { data: recentRaw },
+    { data: timelineRaw },
+    { data: distributionRaw },
+  ] = await Promise.all([
+    supabase
+      .from("daily_features")
+      .select("date, country, escalation_level, n_conflict_events, avg_goldstein, n_gdelt_mentions")
+      .order("date", { ascending: false })
+      .limit(30),
+    supabase
+      .from("raw_events")
+      .select("timestamp, source, country, event_type, text")
+      .order("timestamp", { ascending: false })
+      .limit(10),
+    supabase
+      .from("v_escalation_timeline")
+      .select("date, country, level_real, model_name")
+      .eq("model_name", "knn")
+      .order("date", { ascending: true }),
+    supabase.from("v_target_distribution").select("*"),
+  ]);
 
-        <section className="bg-gray-900 rounded-xl p-6">
-          <h2 className="text-xl font-semibold mb-4">Resultados del modelo</h2>
-          <p className="text-gray-500 text-sm italic">
-            Los resultados se cargarán una vez que el pipeline de datos y entrenamiento haya corrido.
-          </p>
-        </section>
-      </div>
-    </main>
-  );
+  const latest: Record<string, {
+    escalation_level: number; date: string;
+    n_conflict_events: number; avg_goldstein: number; n_gdelt_mentions: number;
+  }> = {};
+  for (const row of latestRaw ?? []) {
+    if (!latest[row.country]) latest[row.country] = row as typeof latest[string];
+  }
+
+  const timelineMap: Record<string, TimelinePoint> = {};
+  for (const row of timelineRaw ?? []) {
+    if (!timelineMap[row.date]) timelineMap[row.date] = { date: row.date };
+    (timelineMap[row.date] as Record<string, unknown>)[row.country] = row.level_real;
+  }
+  const timeline = Object.values(timelineMap).sort((a, b) => a.date.localeCompare(b.date));
+
+  const distMap: Record<number, DistPoint> = {};
+  for (const row of distributionRaw ?? []) {
+    const lvl = row.escalation_level as number;
+    const label = lvl === 0 ? "Bajo (0)" : lvl === 1 ? "Medio (1)" : "Alto (2)";
+    if (!distMap[lvl]) distMap[lvl] = { level: label, IRN: 0, ISR: 0, USA: 0 };
+    (distMap[lvl] as Record<string, unknown>)[row.country as string] = row.dias;
+  }
+  const distribution = [0, 1, 2].map(l => distMap[l]).filter(Boolean) as DistPoint[];
+
+  const recentEvents = (recentRaw ?? []).map(r => ({
+    timestamp: r.timestamp ?? "", source: r.source ?? "",
+    country: r.country ?? null, event_type: r.event_type ?? null, text: r.text ?? null,
+  }));
+
+  return { latest, recentEvents, timeline, distribution };
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <div className="bg-gray-900 rounded-xl p-6">
-      <p className="text-gray-400 text-sm">{label}</p>
-      <p className="text-4xl font-bold text-white mt-1">{value}</p>
-      <p className="text-gray-500 text-xs mt-1">{sub}</p>
-    </div>
-  );
-}
+// ── Page ──────────────────────────────────────────────────────────────────────
 
-function SourceRow({ type, name, desc }: { type: string; name: string; desc: string }) {
-  const colors: Record<string, string> = {
-    Estructurada: "bg-blue-900 text-blue-300",
-    Textual: "bg-green-900 text-green-300",
-    Movilidad: "bg-yellow-900 text-yellow-300",
-    Social: "bg-purple-900 text-purple-300",
-  };
+export default async function Home() {
+  const { latest, recentEvents, timeline, distribution } = await getPageData();
+
   return (
-    <li className="flex items-start gap-3">
-      <span
-        className={`text-xs px-2 py-0.5 rounded font-medium shrink-0 ${colors[type] ?? "bg-gray-700 text-gray-300"}`}
-      >
-        {type}
-      </span>
-      <span>
-        <span className="font-medium text-white">{name}</span>
-        <span className="text-gray-400"> — {desc}</span>
-      </span>
-    </li>
+    <>
+      <NavBar />
+      <main>
+        {/* 01 · Hero */}
+        <HeroSection />
+
+        {/* Video 1 — transición al conflicto (imágenes de guerra / noticieros) */}
+        <VideoBreak
+          src={VIDEOS.conflict}
+          title="Una crisis global."
+          subtitle="Irán, Israel y EE.UU. en el punto de mayor tensión desde la Guerra Fría"
+          gradient="from-[#1d1d1f] via-[#2d1010] to-[#1d1d1f]"
+          height="55vh"
+        />
+
+        {/* 02 · El conflicto — contexto histórico + timeline */}
+        <ConflictSection />
+
+        {/* 03 · Los datos — 6 gráficas */}
+        <DataSection timeline={timeline} distribution={distribution} />
+
+        {/* 04 · Arquitectura de datos — Supabase + ER + features */}
+        <DataArchitectureSection />
+
+        {/* 05 · Las fuentes */}
+        <SourcesSection />
+
+        {/* Video 2 — transición al mapa (satélite / buques / Golfo Pérsico) */}
+        <VideoBreak
+          src={VIDEOS.satellite}
+          title="El Estrecho de Ormuz."
+          subtitle="6,812 anomalías térmicas detectadas · NASA FIRMS · Mayo 2026"
+          gradient="from-[#080f1a] via-[#0a1e35] to-[#080f1a]"
+          height="55vh"
+        />
+
+        {/* 05 · Mapa del Estrecho + FIRMS */}
+        <HormuzMapSection />
+
+        {/* 06 · La IA */}
+        <MLSection />
+
+        {/* 07 · Estado actual en vivo */}
+        <LiveSection latest={latest} recentEvents={recentEvents} />
+
+        {/* Video 3 — transición a conclusiones (newsroom / breaking news) */}
+        <VideoBreak
+          src={VIDEOS.newsroom}
+          title="Lo que encontramos."
+          subtitle="Inteligencia artificial aplicada al conflicto más monitoreado de 2026"
+          gradient="from-[#1d1d1f] via-[#1a1a2e] to-[#1d1d1f]"
+          height="50vh"
+        />
+
+        {/* 08 · Conclusiones */}
+        <FindingsSection />
+
+        <FooterSection />
+      </main>
+    </>
   );
 }

@@ -54,3 +54,19 @@ def normalize(df: pd.DataFrame) -> pd.DataFrame:
             "value": df["fatalities"],
         }
     )
+
+
+if __name__ == "__main__":
+    from pathlib import Path
+
+    OUT_DIR = Path("data/raw/acled")
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    print("Fetching ACLED events 2024-01-01 → 2026-05-30 ...")
+    df = fetch_events(start_date="2024-01-01", end_date="2026-05-30", limit=10000)
+    if not df.empty:
+        out = OUT_DIR / "acled_raw.parquet"
+        df.to_parquet(out, index=False)
+        print(f"ACLED: {len(df)} events → {out}")
+    else:
+        print("ACLED: no data returned")

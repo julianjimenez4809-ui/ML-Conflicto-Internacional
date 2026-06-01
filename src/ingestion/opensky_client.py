@@ -1,21 +1,23 @@
 """OpenSky Network client — OAuth2 (client_credentials) flow.
 
-Tokens duran 30 min. TokenManager los refresca automáticamente.
+Tokens duran 30 min. TokenManager los refresca automaticamente.
 Credenciales van en .env: OPENSKY_CLIENT_ID y OPENSKY_CLIENT_SECRET.
+Sin credenciales OAuth2 el cliente cae a la API publica (sin autenticacion).
 """
 
 import os
 import time
 import requests
 import pandas as pd
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).parents[2] / ".env")
 
 TOKEN_URL = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
 BASE_URL  = "https://opensky-network.org/api"
 
-# Bounding box: Mediterráneo Oriental + Golfo Pérsico
+# Bounding box: Mediterraneo Oriental + Golfo Persico
 BBOX = {"lamin": 29.0, "lamax": 38.0, "lomin": 34.0, "lomax": 56.0}
 
 
@@ -26,7 +28,10 @@ class TokenManager:
         self._token: str | None = None
         self._expires_at: float = 0
 
-    def get_token(self) -> str:
+    def get_token(self) -> str | None:
+        client_id = os.environ.get("OPENSKY_CLIENT_ID")
+        if not client_id:
+            return None  # Sin credenciales OAuth2 → API publica
         if self._token and time.time() < self._expires_at - 60:
             return self._token
         return self._refresh()
@@ -50,7 +55,10 @@ class TokenManager:
         return self._token
 
     def auth_header(self) -> dict[str, str]:
-        return {"Authorization": f"Bearer {self.get_token()}"}
+        token = self.get_token()
+        if token:
+            return {"Authorization": f"Bearer {token}"}
+        return {}
 
 
 # Instancia global reutilizable dentro del proceso
@@ -89,7 +97,7 @@ def fetch_states() -> pd.DataFrame:
 
 
 def normalize(df: pd.DataFrame) -> pd.DataFrame:
-    """Mapea al esquema común del proyecto."""
+    """Mapea al esquema comun del proyecto."""
     return pd.DataFrame({
         "timestamp":  df["timestamp"],
         "source":     "opensky",
@@ -100,3 +108,24 @@ def normalize(df: pd.DataFrame) -> pd.DataFrame:
         "event_type": "flight",
         "value":      df["baro_altitude"],
     })
+
+
+if __name__ == "__main__":
+    OUT_DIR = Path("data/raw/opensky")
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    using_oauth = bool(os.environ.get("OPENSKY_CLIENT_ID"))
+    print(f"Fetching OpenSky state vectors ({'OAuth2' if using_oauth else 'API publica'}) ...")
+
+    df = fetch_states()
+    if not df.empty:
+        out = OUT_DIR / "opensky_raw.parquet"
+        if out.exists():
+            existing = pd.read_parquet(out)
+            df = pd.concat([existing, df], ignore_index=True).drop_duplicates(
+                subset=["icao24", "timestamp"]
+            )
+        df.to_parquet(out, index=False)
+        print(f"OpenSky: {len(df)} flights -> {out}")
+    else:
+        print("OpenSky: no data returned (verifica credenciales o bbox)")

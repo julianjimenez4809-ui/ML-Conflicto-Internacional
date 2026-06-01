@@ -1,0 +1,18 @@
+{
+  "knn": {
+    "f1_weighted_mean": 0.7513348662044315,
+    "f1_weighted_std": 0.031119899889003405
+  },
+  "naive_bayes": {
+    "f1_weighted_mean": 0.4518761951910619,
+    "f1_weighted_std": 0.05804521774272259
+  },
+  "logistic_regression": {
+    "f1_weighted_mean": 0.6239840715745344,
+    "f1_weighted_std": 0.027680581442521637
+  },
+  "ridge": {
+    "f1_weighted_mean": 0.46656363306617976,
+    "f1_weighted_std": 0.062109684114595526
+  }
+}

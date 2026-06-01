@@ -60,3 +60,7 @@ visualizaciones/*.jpg
 
 # Entorno virtual local
 .venv/
+
+# Videos originales (comprimidos en dashboard/public/videos/)
+*.mp4
+*.mov
