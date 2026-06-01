@@ -6,12 +6,10 @@ import {
   FindingsSection, FooterSection,
 } from "./story-sections";
 
-// ── Video sources — reemplazar con URLs reales cuando estén disponibles ───────
-// Formato: MP4 · 1080p mínimo · sin audio necesario · 15-25 segundos
 const VIDEOS = {
-  conflict:   "",   // V1: Imágenes bélicas — jets, explosiones, drones de guerra, noticieros
-  satellite:  "",   // V2: Vista satelital Oriente Medio — buques en Golfo, Estrecho de Ormuz
-  newsroom:   "",   // V3: Breaking news b-roll — pantallas, mapas en movimiento, sala de redacción
+  conflict:  "/videos/military.mp4",
+  satellite: "/videos/tanker.mp4",
+  newsroom:  "/videos/newsroom.mp4",
 };
 
 // ── Data fetching ─────────────────────────────────────────────────────────────
