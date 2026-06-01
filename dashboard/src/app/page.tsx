@@ -2,8 +2,8 @@ import { supabase } from "@/lib/supabase";
 import type { TimelinePoint, DistPoint } from "./charts";
 import {
   NavBar, HeroSection, VideoBreak, ConflictSection, DataSection,
-  SourcesSection, HormuzMapSection, MLSection, LiveSection,
-  FindingsSection, FooterSection,
+  DataArchitectureSection, SourcesSection, HormuzMapSection,
+  MLSection, LiveSection, FindingsSection, FooterSection,
 } from "./story-sections";
 
 const VIDEOS = {
@@ -98,7 +98,10 @@ export default async function Home() {
         {/* 03 · Los datos — 6 gráficas */}
         <DataSection timeline={timeline} distribution={distribution} />
 
-        {/* 04 · Las fuentes */}
+        {/* 04 · Arquitectura de datos — Supabase + ER + features */}
+        <DataArchitectureSection />
+
+        {/* 05 · Las fuentes */}
         <SourcesSection />
 
         {/* Video 2 — transición al mapa (satélite / buques / Golfo Pérsico) */}
