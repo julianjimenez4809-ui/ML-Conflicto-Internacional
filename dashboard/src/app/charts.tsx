@@ -98,49 +98,49 @@ export function SourceDonutChart() {
   return (
     <div className="space-y-0">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/8">
+      <div className="flex items-center justify-between mb-6 pb-5 border-b border-[#e5e5ea]">
         <div>
-          <div className="text-3xl font-black font-mono text-white">{total.toLocaleString("es-CO")}</div>
-          <div className="text-xs text-white/30 font-mono mt-0.5">eventos totales en Supabase</div>
+          <div className="text-3xl font-black font-mono text-[#1d1d1f]">{total.toLocaleString("es-CO")}</div>
+          <div className="text-xs text-[#6e6e73] font-mono mt-1">eventos totales en Supabase</div>
         </div>
         {/* Mini donut — CSS conic-gradient */}
         <div className="relative w-20 h-20 flex-shrink-0">
           <div className="w-20 h-20 rounded-full" style={{
-            background: `conic-gradient(#af52de 0% 88.5%, #ff3b30 88.5% 100%, #ff9f0a 100% 100%)`,
+            background: `conic-gradient(#af52de 0% 88.5%, #ff3b30 88.5% 99.9%, #ff9f0a 99.9% 100%)`,
           }}/>
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-12 h-12 rounded-full flex flex-col items-center justify-center" style={{ background:"#1d1d1f" }}>
-              <div className="text-[10px] font-black font-mono text-white leading-none">6</div>
-              <div className="text-[7px] text-white/30 leading-none">fuentes</div>
+            <div className="w-12 h-12 rounded-full flex flex-col items-center justify-center bg-white">
+              <div className="text-[11px] font-black font-mono text-[#1d1d1f] leading-none">6</div>
+              <div className="text-[8px] text-[#6e6e73] leading-none mt-0.5">fuentes</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Horizontal bar chart */}
-      <div className="space-y-4">
+      <div className="space-y-5">
         {SOURCE_DATA.map(s => (
           <div key={s.name}
-            className="group cursor-default"
-            style={{ opacity: active === null || active === s.name ? 1 : 0.45 }}
+            className="cursor-default transition-opacity"
+            style={{ opacity: active === null || active === s.name ? 1 : 0.35 }}
             onMouseEnter={() => setActive(s.name)}
             onMouseLeave={() => setActive(null)}>
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2.5">
-                <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }}/>
-                <span className="text-sm font-semibold text-white">{s.name}</span>
-                <span className="text-xs text-white/30">{s.desc}</span>
+                <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }}/>
+                <span className="text-sm font-bold text-[#1d1d1f]">{s.name}</span>
+                <span className="text-xs text-[#6e6e73]">{s.desc}</span>
               </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-xs font-mono text-white/40">{s.value.toLocaleString("es-CO")}</span>
-                <span className="text-xs font-bold font-mono w-14 text-right" style={{ color: s.color }}>
+              <div className="flex items-center gap-4 flex-shrink-0">
+                <span className="text-sm font-mono text-[#6e6e73]">{s.value.toLocaleString("es-CO")}</span>
+                <span className="text-sm font-black font-mono w-14 text-right" style={{ color: s.color }}>
                   {s.pct >= 1 ? s.pct.toFixed(1) + "%" : "<0.1%"}
                 </span>
               </div>
             </div>
-            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-              <div className="h-2 rounded-full transition-all duration-500"
-                style={{ width: `${Math.max(s.pct, 0.3)}%`, backgroundColor: s.color, opacity: 0.85 }}/>
+            <div className="h-2.5 bg-[#f0f0f5] rounded-full overflow-hidden">
+              <div className="h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${Math.max(s.pct, 0.4)}%`, backgroundColor: s.color }}/>
             </div>
           </div>
         ))}
