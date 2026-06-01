@@ -1,17 +1,10 @@
 import { supabase } from "@/lib/supabase";
 import type { TimelinePoint, DistPoint } from "./charts";
 import {
-  HeroSection,
-  ContextSection,
-  SignalsSection,
-  DataSection,
-  FirmsSection,
-  MLSection,
-  LiveSection,
-  FindingsSection,
+  NavBar, HeroSection, ConflictSection, DataSection,
+  SourcesSection, FirmsSection, MLSection, LiveSection,
+  FindingsSection, FooterSection,
 } from "./story-sections";
-
-// ── Data fetching ─────────────────────────────────────────────────────────────
 
 async function getPageData() {
   const [
@@ -38,19 +31,14 @@ async function getPageData() {
     supabase.from("v_target_distribution").select("*"),
   ]);
 
-  // Latest escalation per country (first occurrence DESC = most recent date)
   const latest: Record<string, {
-    escalation_level: number;
-    date: string;
-    n_conflict_events: number;
-    avg_goldstein: number;
-    n_gdelt_mentions: number;
+    escalation_level: number; date: string;
+    n_conflict_events: number; avg_goldstein: number; n_gdelt_mentions: number;
   }> = {};
   for (const row of latestRaw ?? []) {
     if (!latest[row.country]) latest[row.country] = row as typeof latest[string];
   }
 
-  // Pivot timeline: date → { IRN?, ISR?, USA? }
   const timelineMap: Record<string, TimelinePoint> = {};
   for (const row of timelineRaw ?? []) {
     if (!timelineMap[row.date]) timelineMap[row.date] = { date: row.date };
@@ -58,7 +46,6 @@ async function getPageData() {
   }
   const timeline = Object.values(timelineMap).sort((a, b) => a.date.localeCompare(b.date));
 
-  // Pivot distribution: level → { IRN, ISR, USA }
   const distMap: Record<number, DistPoint> = {};
   for (const row of distributionRaw ?? []) {
     const lvl = row.escalation_level as number;
@@ -79,21 +66,23 @@ async function getPageData() {
   return { latest, recentEvents, timeline, distribution };
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export default async function Home() {
   const { latest, recentEvents, timeline, distribution } = await getPageData();
 
   return (
-    <main className="bg-[#040710]">
-      <HeroSection />
-      <ContextSection />
-      <SignalsSection />
-      <DataSection timeline={timeline} distribution={distribution} />
-      <FirmsSection />
-      <MLSection />
-      <LiveSection latest={latest} recentEvents={recentEvents} />
-      <FindingsSection />
-    </main>
+    <>
+      <NavBar />
+      <main>
+        <HeroSection />
+        <ConflictSection />
+        <DataSection timeline={timeline} distribution={distribution} />
+        <SourcesSection />
+        <FirmsSection />
+        <MLSection />
+        <LiveSection latest={latest} recentEvents={recentEvents} />
+        <FindingsSection />
+        <FooterSection />
+      </main>
+    </>
   );
 }
